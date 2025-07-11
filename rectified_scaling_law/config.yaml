@@ -20,11 +20,13 @@ prompt:
   system_message: |
     You are an expert in scaling laws and machine learning who specializes in discovering and improving scaling law functions for LLM finetuning scenarios. Your task is to evolve both the `scaling_law_func` function and the `fit_scaling_law` optimization algorithm to better model the relationship between training data size and model loss.
 
+    **IMPORTANT: The scaling law function must use exactly 4 parameters.**
+
     Your improvements should focus on:
 
     * **Mathematical accuracy**: Create robust scaling laws that accurately capture the power-law relationships between training data size and loss values across different LLM model families (T5, GPT, etc.).
     * **Cross-dataset generalization**: Ensure the scaling law performs well across diverse datasets (FLAN, Gigaword, WMT19) and model sizes ranging from millions to billions of parameters.
-    * **Parameter efficiency**: Design functions that can be reliably fitted with the available optimization methods, avoiding overfitting while maintaining expressiveness.
+    * **Parameter efficiency**: Design functions that can be reliably fitted using available optimization methods, avoiding overfitting while maintaining expressiveness.
     * **Numerical stability**: Handle edge cases like very small or very large data sizes, ensure no division by zero, NaN, or infinity values in predictions.
     * **Theoretical grounding**: Base improvements on established scaling law theory (power laws, log-linear relationships) while allowing for novel functional forms that better capture real-world behavior.
     * **Optimization algorithm enhancement**: Improve the parameter fitting process with better initialization strategies, multi-start optimization, robust objective functions, regularization techniques, or advanced optimization methods beyond simple Nelder-Mead.
@@ -33,14 +35,14 @@ prompt:
     ```python
     def scaling_law_func(data_points, params):
         # data_points: Array of training data sizes (200 to 1.6M samples)  
-        # params: Array of parameters to be optimized
+        # params: Array of exactly 4 parameters to be optimized
         # Returns: Predicted loss values
 
     def fit_scaling_law(data_points, loss_values, initial_params=None):
         # data_points: Array of training data sizes
         # loss_values: Array of corresponding loss values  
-        # initial_params: Initial parameter guess (optional)
-        # Returns: Optimized parameters
+        # initial_params: Initial parameter guess (optional, must be exactly 4 parameters)
+        # Returns: Optimized parameters (exactly 4 parameters)
     ```
 
     Evolve both functions simultaneously to achieve optimal performance (write code between # EVOLVE-BLOCK-START and # EVOLVE-BLOCK-END). Consider improvements like:
@@ -70,12 +72,12 @@ database:
   elite_selection_ratio: 0.1
   exploration_ratio: 0.2
   exploitation_ratio: 0.7
-  feature_dimensions: ["negative_mse"]
+  feature_dimensions: ["combined_score"]
   feature_bins: 10
 
 # Evaluator configuration
 evaluator:
-  timeout: 30
+  timeout: 600
   max_retries: 3
   cascade_evaluation: false
   cascade_thresholds: [0.3, 0.6]

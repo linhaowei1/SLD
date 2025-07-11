@@ -1,0 +1,16 @@
+{
+  "id": "b7b2f0b6-20b9-48ec-9599-8fc58b193724",
+  "generation": 2,
+  "iteration": 21,
+  "current_iteration": 31,
+  "metrics": {
+    "mse": 0.0004292389985403826,
+    "combined_score": 0.9995709451685258,
+    "mse_flan": 0.000487916537541474,
+    "mse_gigaword": 0.00016446558964952696,
+    "mse_wmt19": 0.0006353348684301472
+  },
+  "language": "python",
+  "timestamp": 1752156657.4773228,
+  "saved_at": 1752156854.95847
+}

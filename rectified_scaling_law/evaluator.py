@@ -1,6 +1,6 @@
 """
 Evaluator for scaling law discovery programs
-用于评估缩放律发现程序性能的评估器
+Evaluator for assessing the performance of scaling law discovery programs
 """
 
 import importlib.util
@@ -16,19 +16,19 @@ from typing import Dict, Any, List, Tuple
 from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error, r2_score
 
-# 数据大小列表（跳过第一列的0，从200开始）
+# Data size list (skip first column's 0, start from 200)
 DATA_SIZES = np.array([200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200, 102400, 204800, 409600, 819200, 1638400])
 
 def get_failure_result() -> Dict[str, float]:
     """
-    返回失败情况下的标准结果，确保与成功情况有相同的key结构
+    Return standard result for failure cases, ensuring same key structure as success cases
     """
-    # 数据集名称列表
+    # Dataset name list
     dataset_names = ["flan", "gigaword", "wmt19"]
     
-    # 使用100000作为最差MSE分数（很大的MSE值）
+    # Use 100000 as worst MSE score (very large MSE value)
     worst_mse = 100000.0
-    # 对应的最差overall_score（接近0）
+    # Corresponding worst overall_score (close to 0)
     worst_score = 1.0 / (1.0 + worst_mse)
     
     result = {
@@ -36,7 +36,7 @@ def get_failure_result() -> Dict[str, float]:
         "combined_score": worst_score,
     }
     
-    # 为每个可能的数据集添加失败分数
+    # Add failure scores for each possible dataset
     for dataset_name in dataset_names:
         result[f"mse_{dataset_name}"] = worst_mse
     
@@ -44,17 +44,17 @@ def get_failure_result() -> Dict[str, float]:
 
 def load_real_datasets(data_dir="data"):
     """
-    从CSV文件加载真实数据集
+    Load real datasets from CSV files
     
     Args:
-        data_dir: 数据目录路径
+        data_dir: Data directory path
         
     Returns:
-        包含所有数据集和模型数据的字典
+        Dictionary containing all dataset and model data
     """
     datasets = {}
     
-    # CSV文件列表
+    # CSV file list
     csv_files = ["flan.csv", "gigaword.csv", "wmt19.csv"]
     
     for csv_file in csv_files:
@@ -62,32 +62,32 @@ def load_real_datasets(data_dir="data"):
         file_path = os.path.join(data_dir, csv_file)
         
         try:
-            # 读取CSV文件
+            # Read CSV file
             df = pd.read_csv(file_path)
             
-            # 获取损失值列（跳过第一列config name，跳过数据大小0的列，排除最后两列size和family）
-            loss_columns = df.columns[2:-2]  # 从第3列开始（跳过config name和0列），到倒数第3列
+            # Get loss value columns (skip first column config name, skip data size 0 column, exclude last two columns size and family)
+            loss_columns = df.columns[2:-2]  # Start from 3rd column (skip config name and 0 column), to third-to-last column
             
-            # 初始化数据集
+            # Initialize dataset
             datasets[dataset_name] = {}
             
-            # 为每个模型创建数据
+            # Create data for each model
             for idx, row in df.iterrows():
                 model_name = row['config name']
                 model_size = row['size'] 
                 model_family = row['family']
                 
-                # 提取损失值
+                # Extract loss values
                 loss_values = []
                 valid_data_sizes = []
                 
                 for i, col in enumerate(loss_columns):
                     loss_val = row[col]
-                    if pd.notna(loss_val) and loss_val > 0:  # 只使用有效的正数损失值
+                    if pd.notna(loss_val) and loss_val > 0:  # Only use valid positive loss values
                         loss_values.append(float(loss_val))
                         valid_data_sizes.append(DATA_SIZES[i])
                 
-                if len(loss_values) >= 4:  # 确保有足够的数据点进行拟合
+                if len(loss_values) >= 4:  # Ensure enough data points for fitting
                     datasets[dataset_name][model_name] = {
                         "data_points": np.array(valid_data_sizes),
                         "loss_values": np.array(loss_values),
@@ -100,27 +100,27 @@ def load_real_datasets(data_dir="data"):
     
     return datasets
 
-# 动态确定数据目录路径
+# Dynamically determine data directory path
 def get_data_dir():
-    """获取数据目录的正确路径"""
+    """Get correct path for data directory"""
     script_dir = os.path.dirname(os.path.abspath(__file__))
     data_dir = os.path.join(script_dir, "data")
     
-    # 如果当前目录下有data文件夹，优先使用
+    # If data folder exists in current directory, use it first
     if os.path.exists("data"):
         return "data"
-    # 否则使用脚本同目录下的data文件夹
+    # Otherwise use data folder in same directory as script
     elif os.path.exists(data_dir):
         return data_dir
     else:
-        # 尝试上级目录
+        # Try parent directory
         parent_data_dir = os.path.join(os.path.dirname(script_dir), "data")
         if os.path.exists(parent_data_dir):
             return parent_data_dir
         else:
-            raise FileNotFoundError("找不到data目录，请确保data文件夹存在")
+            raise FileNotFoundError("Cannot find data directory, please ensure data folder exists")
 
-# 加载真实数据集
+# Load real datasets
 try:
     data_directory = get_data_dir()
     TEST_DATASETS = load_real_datasets(data_directory)
@@ -130,16 +130,16 @@ except Exception as e:
 
 def run_with_timeout(func, args=(), kwargs={}, timeout_seconds=30):
     """
-    使用超时运行函数
+    Run function with timeout
     
     Args:
-        func: 要运行的函数
-        args: 函数参数
-        kwargs: 关键字参数
-        timeout_seconds: 超时时间（秒）
+        func: Function to run
+        args: Function arguments
+        kwargs: Keyword arguments
+        timeout_seconds: Timeout in seconds
         
     Returns:
-        函数结果或抛出 TimeoutError
+        Function result or raises TimeoutError
     """
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         future = executor.submit(func, *args, **kwargs)
@@ -147,11 +147,11 @@ def run_with_timeout(func, args=(), kwargs={}, timeout_seconds=30):
             result = future.result(timeout=timeout_seconds)
             return result
         except concurrent.futures.TimeoutError:
-            raise TimeoutError(f"函数运行超时，超过 {timeout_seconds} 秒")
+            raise TimeoutError(f"Function execution timeout, exceeded {timeout_seconds} seconds")
 
 
 def safe_float(value):
-    """安全地将值转换为浮点数"""
+    """Safely convert value to float"""
     try:
         return float(value)
     except (TypeError, ValueError):
@@ -160,49 +160,49 @@ def safe_float(value):
 
 def evaluate_fit_quality(predicted_values: np.ndarray, true_values: np.ndarray) -> Dict[str, float]:
     """
-    评估拟合质量
+    Evaluate fit quality
     
     Args:
-        predicted_values: 预测值
-        true_values: 真实值
+        predicted_values: Predicted values
+        true_values: True values
         
     Returns:
-        包含各种评估指标的字典
+        Dictionary containing various evaluation metrics
     """
     try:
-        # 确保输入为numpy数组
+        # Ensure inputs are numpy arrays
         predicted = np.asarray(predicted_values, dtype=float)
         true = np.asarray(true_values, dtype=float)
         
-        # 检查形状匹配
+        # Check shape matching
         if predicted.shape != true.shape:
-            return {"error": "预测值和真实值形状不匹配"}
+            return {"error": "Predicted and true values shape mismatch"}
             
-        # 过滤掉无效值
+        # Filter out invalid values
         valid_mask = ~(np.isnan(predicted) | np.isnan(true) | np.isinf(predicted) | np.isinf(true))
         if not np.any(valid_mask):
-            return {"error": "所有预测值都无效"}
+            return {"error": "All predicted values are invalid"}
             
         pred_filtered = predicted[valid_mask]
         true_filtered = true[valid_mask]
         
         if len(pred_filtered) < 2:
-            return {"error": "有效数据点不足"}
+            return {"error": "Insufficient valid data points"}
         
-        # 计算评估指标
+        # Calculate evaluation metrics
         mse = mean_squared_error(true_filtered, pred_filtered)
         rmse = np.sqrt(mse)
         
-        # R² 分数
+        # R² score
         r2 = r2_score(true_filtered, pred_filtered)
         
-        # 皮尔逊相关系数
+        # Pearson correlation coefficient
         correlation, _ = pearsonr(true_filtered, pred_filtered)
         
-        # 平均绝对百分比误差
+        # Mean Absolute Percentage Error
         mape = np.mean(np.abs((true_filtered - pred_filtered) / true_filtered)) * 100
         
-        # 归一化均方根误差
+        # Normalized Root Mean Square Error
         nrmse = rmse / (np.max(true_filtered) - np.min(true_filtered))
         
         return {
@@ -216,21 +216,21 @@ def evaluate_fit_quality(predicted_values: np.ndarray, true_values: np.ndarray) 
         }
         
     except Exception as e:
-        return {"error": f"评估过程中出错: {str(e)}"}
+        return {"error": f"Error during evaluation: {str(e)}"}
 
 
 def evaluate(program_path: str) -> Dict[str, float]:
     """
-    评估缩放律程序的主函数
+    Main function to evaluate scaling law programs
     
     Args:
-        program_path: 程序文件路径
+        program_path: Program file path
         
     Returns:
-        包含评估指标的字典
+        Dictionary containing evaluation metrics
     """
     try:
-        # 加载程序
+        # Load program
         spec = importlib.util.spec_from_file_location("scaling_program", program_path)
         if spec is None or spec.loader is None:
             return get_failure_result()
@@ -238,7 +238,7 @@ def evaluate(program_path: str) -> Dict[str, float]:
         program = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(program)
         
-        # 检查必需的函数是否存在
+        # Check if required functions exist
         if not hasattr(program, "scaling_law_func"):
             return get_failure_result()
             
@@ -248,11 +248,11 @@ def evaluate(program_path: str) -> Dict[str, float]:
         scaling_law_func = program.scaling_law_func
         fit_scaling_law = program.fit_scaling_law
         
-        # 检查是否有可用的测试数据集
+        # Check if test datasets are available
         if not TEST_DATASETS:
             return get_failure_result()
         
-        # 在多个测试数据集和模型上评估
+        # Evaluate on multiple test datasets and models
         all_scores = []
         dataset_scores = {}
         model_count = 0
@@ -267,7 +267,7 @@ def evaluate(program_path: str) -> Dict[str, float]:
                     data_points = model_data["data_points"]
                     true_loss = model_data["loss_values"]
                     
-                    # 使用超时拟合缩放律
+                    # Fit scaling law with timeout
                     start_time = time.time()
                     fitted_params = run_with_timeout(
                         fit_scaling_law, 
@@ -276,20 +276,20 @@ def evaluate(program_path: str) -> Dict[str, float]:
                     )
                     fit_time = time.time() - start_time
                     
-                    # 生成预测
+                    # Generate predictions
                     predicted_loss = run_with_timeout(
                         scaling_law_func,
                         args=(data_points, fitted_params),
                         timeout_seconds=600
                     )
                     
-                    # 评估拟合质量
+                    # Evaluate fit quality
                     metrics = evaluate_fit_quality(predicted_loss, true_loss)
                     
                     if "error" in metrics:
                         continue
                     
-                    # 只使用MSE作为评估指标
+                    # Only use MSE as evaluation metric
                     mse_value = metrics["mse"]
                     
                     dataset_model_scores.append(mse_value)
@@ -300,48 +300,45 @@ def evaluate(program_path: str) -> Dict[str, float]:
                 except Exception as e:
                     pass
             
-            # 计算数据集平均MSE
+            # Calculate dataset average MSE
             if dataset_model_scores:
                 dataset_avg_mse = np.mean(dataset_model_scores)
                 dataset_scores[dataset_name] = float(dataset_avg_mse)
             else:
-                dataset_scores[dataset_name] = 100000.0  # 失败时设为最差分数（有限值）
+                dataset_scores[dataset_name] = 100000.0  # Set to worst score when failed (finite value)
         
-        # 如果所有数据集都失败了
+        # If all datasets failed
         if not all_scores:
             return get_failure_result()
         
-        # 计算MSE统计信息
+        # Calculate MSE statistics
         mean_mse = float(np.mean(all_scores))
         # std_mse = float(np.std(all_scores))
         # min_mse = float(np.min(all_scores))
         # max_mse = float(np.max(all_scores))
         
-        # 计算overall_score：使用1/(1+mse)使得mse越小，分数越大（越大越好）
+        # Calculate overall_score: use 1/(1+mse) so that smaller mse gives larger score (higher is better)
         overall_score = 1.0 / (1.0 + mean_mse)
         
-        # 准备返回结果 - 确保格式与get_failure_result()一致
+        # Prepare return result - ensure format matches get_failure_result()
         result = {
             "mse": mean_mse,
             "combined_score": overall_score,
         }
         
-        # 为所有可能的数据集添加MSE分数
+        # Add MSE scores for all possible datasets
         dataset_names = ["flan", "gigaword", "wmt19"]
         for dataset_name in dataset_names:
             if dataset_name in dataset_scores:
                 result[f"mse_{dataset_name}"] = dataset_scores[dataset_name]
             else:
-                # 如果数据集不存在，使用最差分数
+                # If dataset doesn't exist, use worst score
                 result[f"mse_{dataset_name}"] = 100000.0
         
         return result
         
     except Exception as e:
         return get_failure_result()
-
-
-
 
 
 if __name__ == "__main__":
