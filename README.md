@@ -74,17 +74,6 @@ ls openevolve_output/
 # 查看最佳程序
 cat openevolve_output/best_program.py
 ```
-
-### 可视化进化过程
-
-```bash
-# 安装可视化依赖
-pip install -r ../openevolve/scripts/requirements.txt
-
-# 启动可视化服务器
-python ../openevolve/scripts/visualizer.py --path openevolve_output/checkpoints/checkpoint_100/
-```
-
 ## 📊 数据集说明
 
 项目使用三个真实的LLM微调数据集：
