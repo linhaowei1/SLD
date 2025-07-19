@@ -1,177 +1,125 @@
 # EVOLVE-BLOCK-START
 """
 Scaling law discovery for LLM finetuning scenarios
-Initial program with a simple power law form that can be evolved
+Evolved to use a 4-parameter power‐law+offset form with robust
+hybrid global-local optimization and NMSE objective.
 """
 import numpy as np
-import pandas as pd
-import os
-from scipy.optimize import minimize
-
+from scipy.optimize import differential_evolution, minimize
 
 def scaling_law_func(data_points, params):
     """
-    A scaling law function to model the relationship between data points and loss.
-    
-    This starts as a simple power law but can evolve into more complex forms.
-    IMPORTANT: This function must use exactly 4 parameters, no more and no less.
+    Four-parameter scaling law:
+        loss(x) = a * (x + c)^(-b) + d
+        
+    where:
+        a > 0      -- scale of the power law
+        b > 0      -- exponent (steepness)
+        c >= 0     -- horizontal shift (stabilizes small x)
+        d >= 0     -- asymptotic floor (minimum loss)
     
     Args:
-        data_points: Array of data points (training data size)
-        params: Array of parameters for the scaling law (must be exactly 4 parameters)
-        
+        data_points: array-like of training data sizes
+        params:     array-like of exactly 4 parameters [a, b, c, d]
+    
     Returns:
-        Predicted loss values
+        Predicted loss values, same shape as data_points
     """
-    # Ensure we have exactly 4 parameters
-    if len(params) != 4:
-        # Truncate to 4 parameters if more, pad to 4 if less
-        if len(params) > 4:
-            params = params[:4]
-        else:
-            # Pad with default values if needed
-            padded_params = np.concatenate([params, np.ones(4 - len(params))])
-            params = padded_params
-    
-    # Convert data_points to numpy array and handle edge cases
-    x = np.asarray(data_points, dtype=float)
-    
-    # Avoid log(0) by adding a small epsilon
-    epsilon = 1e-6
-    x_safe = np.maximum(x, epsilon)
-    
-    # Simple power law: loss = a * (data_points + b)^(-c) + d
-    # This is a common form for scaling laws with exactly 4 parameters
-    a = abs(params[0]) + 0.1  # Ensure positive scale factor
-    b = abs(params[1]) + 1.0  # Ensure positive offset
-    c = abs(params[2]) + 0.1  # Ensure positive exponent
-    d = abs(params[3]) + 0.01 # Ensure positive baseline loss
-    
-    # Power law with offset: loss = a * (x + b)^(-c) + d
-    loss = a * np.power(x_safe + b, -c) + d
-    
-    return loss
+    a, b, c, d = params
+    x = np.asarray(data_points, dtype=np.float64)
+    # enforce numerical stability
+    x = np.maximum(x, 1.0)
+    return a * np.power(x + c, -b) + d
 
-
-def fit_scaling_law(data_points, loss_values, initial_params=None):
+def fit_scaling_law(data_points, loss_values):
     """
-    Fit the scaling law to data points and loss values
+    Fit the 4-parameter scaling law by minimizing normalized MSE (NMSE)
+    over the data (hybrid global+local optimization).
     
     Args:
-        data_points: Array of data points (training data size)
-        loss_values: Array of corresponding loss values
-        initial_params: Initial parameter guess (optional, must be exactly 4 parameters)
-        
+        data_points: array-like of training data sizes
+        loss_values: array-like of observed losses
+    
     Returns:
-        Optimized parameters (exactly 4 parameters)
+        params_opt: optimized parameters [a, b, c, d]
     """
-    # Ensure initial parameters are exactly 4 elements
-    if initial_params is None:
-        initial_params = np.random.rand(4)
+    # Prepare arrays
+    x = np.asarray(data_points, dtype=np.float64)
+    y = np.asarray(loss_values, dtype=np.float64)
+    # Compute denominator for NMSE (variance of y)
+    y_mean = np.mean(y)
+    denom = np.mean((y - y_mean) ** 2) + 1e-12
+    
+    # Objective: normalized mean squared error
+    def nmse_obj(params):
+        preds = scaling_law_func(x, params)
+        mse = np.mean((preds - y) ** 2)
+        return mse / denom
+
+    # Parameter bounds
+    bounds = [
+        (1e-8, np.max(y) * 10.0),  # a > 0
+        (1e-8, 5.0),               # 0 < b <= 5
+        (0.0, np.max(x) * 10.0),   # c >= 0
+        (0.0, np.max(y))           # d >= 0
+    ]
+
+    # Smart initialization via log‐log linear fit
+    with np.errstate(divide='ignore', invalid='ignore'):
+        logx = np.log(x)
+        logy = np.log(y)
+    mask = np.isfinite(logx) & np.isfinite(logy)
+    if np.sum(mask) > 2:
+        # logy ≈ A + B*logx  =>  y ≈ exp(A) * x^B
+        B, A = np.polyfit(logx[mask], logy[mask], 1)
+        init_a = max(1e-6, np.exp(A))
+        init_b = max(1e-6, -B)
     else:
-        if len(initial_params) != 4:
-            if len(initial_params) > 4:
-                initial_params = initial_params[:4]
-            else:
-                initial_params = np.concatenate([initial_params, np.ones(4 - len(initial_params))])
-    
-    def objective(params):
-        try:
-            # Ensure params has exactly 4 elements
-            if len(params) != 4:
-                return 1e6  # Return large error if wrong number of parameters
-            
-            predicted = scaling_law_func(data_points, params)
-            mse = np.mean((predicted - loss_values) ** 2)
-            return mse
-        except:
-            return 1e6  # Return large error if computation fails
-    
-    # Use bounds to constrain parameters and prevent numerical issues
-    bounds = [(0.01, 10.0),   # a: scale factor
-              (0.1, 1000.0),  # b: offset  
-              (0.01, 3.0),    # c: exponent
-              (0.001, 1.0)]   # d: baseline loss
-    
-    result = minimize(objective, initial_params, method='L-BFGS-B', bounds=bounds)
-    
-    # Ensure result has exactly 4 parameters
-    final_params = result.x if result.success else initial_params
-    
-    # Double check the length and truncate/pad if necessary
-    if len(final_params) != 4:
-        if len(final_params) > 4:
-            final_params = final_params[:4]
-        else:
-            final_params = np.concatenate([final_params, np.ones(4 - len(final_params))])
-    
-    return final_params
+        init_a, init_b = 1.0, 0.5
+    init_c = max(0.0, np.min(x) * 0.1)
+    init_d = max(0.0, np.min(y) * 0.1)
+    initial_guess = [init_a, init_b, init_c, init_d]
 
+    # Global search (Differential Evolution)
+    try:
+        de_result = differential_evolution(
+            nmse_obj,
+            bounds,
+            strategy='best1bin',
+            maxiter=500,
+            popsize=12,
+            tol=1e-6,
+            polish=False,
+            disp=False
+        )
+        global_best = de_result.x
+    except Exception:
+        global_best = initial_guess
 
-# Set the number of parameters this function expects (MUST BE 4)
+    # Local refinement (L-BFGS-B)
+    try:
+        local_result = minimize(
+            nmse_obj,
+            x0=global_best,
+            bounds=bounds,
+            method='L-BFGS-B',
+            options={'maxiter': 500, 'ftol':1e-9}
+        )
+        params_opt = local_result.x if local_result.success else global_best
+    except Exception:
+        params_opt = global_best
+
+    # Ensure exactly 4 params
+    params_opt = np.asarray(params_opt, dtype=np.float64).flatten()
+    if params_opt.shape[0] != 4:
+        # pad or truncate (should not normally happen)
+        p = np.ones(4, dtype=np.float64)
+        p[:params_opt.shape[0]] = params_opt[:4]
+        params_opt = p
+
+    return params_opt
+
+# Indicate to external code how many parameters we use
 scaling_law_func.num_params = 4
 
 # EVOLVE-BLOCK-END
-
-
-if __name__ == "__main__":
-    # Use real data to test the scaling law function
-    # Load CSV files from data folder
-    
-    data_dir = "data"
-    csv_files = ["flan.csv", "gigaword.csv", "wmt19.csv"]
-    
-    # Training data sizes (corresponding to columns in CSV files)
-    data_sizes = np.array([200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200, 102400, 204800, 409600, 819200, 1638400])
-    
-    for csv_file in csv_files:
-        print(f"\n{'='*50}")
-        print(f"Processing dataset: {csv_file}")
-        print(f"{'='*50}")
-        
-        # Load CSV file
-        file_path = os.path.join(data_dir, csv_file)
-        df = pd.read_csv(file_path)
-        
-        # Get loss value columns (exclude first column for model name, last two columns for size and family)
-        loss_columns = df.columns[1:-2]
-        
-        # Fit scaling law for each model
-        for idx, row in df.iterrows():
-            model_name = row['config name']
-            
-            # Extract loss values (skip first column's initial value since data size is 0)
-            loss_values = []
-            valid_data_sizes = []
-            
-            for i, col in enumerate(loss_columns[1:], 1):  # Skip column for data size 0
-                loss_val = row[col]
-                if pd.notna(loss_val) and loss_val > 0:  # Only use valid positive loss values
-                    loss_values.append(float(loss_val))
-                    valid_data_sizes.append(data_sizes[i-1])
-            
-            if len(loss_values) >= 4:  # Ensure enough data points for fitting
-                loss_values = np.array(loss_values)
-                valid_data_sizes = np.array(valid_data_sizes)
-                
-                print(f"\nModel: {model_name}")
-                print(f"Number of data points: {len(valid_data_sizes)}")
-                print(f"Data size range: {valid_data_sizes[0]} - {valid_data_sizes[-1]}")
-                print(f"Loss value range: {loss_values[-1]:.3f} - {loss_values[0]:.3f}")
-                
-                # Fit scaling law
-                fitted_params = fit_scaling_law(valid_data_sizes, loss_values)
-                print(f"Fitted parameters: {fitted_params}")
-                
-                # Calculate fit quality (mean squared error)
-                predicted_loss = scaling_law_func(valid_data_sizes, fitted_params)
-                mse = np.mean((predicted_loss - loss_values) ** 2)
-                print(f"Mean squared error: {mse:.6f}")
-                
-                # Display model information
-                model_size = row['size']
-                model_family = row['family']
-                print(f"Model size: {model_size:,} parameters")
-                print(f"Model family: {model_family}")
-            else:
-                print(f"\nModel {model_name}: Insufficient data points, skipping fit")

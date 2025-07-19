@@ -1,203 +1,143 @@
 # EVOLVE-BLOCK-START
 """
-Revised scaling law discovery for LLM finetuning scenarios.
-
-We adopt a 4-parameter form:
-    loss(x) = a / (x^c + b) + d
-
-Parameters:
-  - a > 0 scales the power‐law term
-  - b > 0 offsets the denominator for small-x behavior
-  - c > 0 is the exponent controlling decay rate
-  - d >= 0 is the asymptotic floor as x→∞
-
-This form ensures:
-  - loss → d as x → ∞
-  - loss ∼ a / x^c + d for large x
-  - a finite offset at small x via b
-  - Exactly 4 parameters
-
-Fitting procedure:
-  - Global search via Differential Evolution
-  - Local refinement via L-BFGS-B from multiple starting points
-  - Smart heuristic initialization from endpoint fitting
-  - Optional user-supplied initial guess
-  - Robust bounds and numeric safeguards
+Scaling law discovery for LLM finetuning scenarios
+Optimized 4-parameter offset power-law with targeted 2D global search
+on (B, x0), closed‐form estimation of (A, α), and multi-start L-BFGS-B refinement.
 """
-
-import os
 import numpy as np
-import pandas as pd
 from scipy.optimize import differential_evolution, minimize
 
 def scaling_law_func(data_points, params):
     """
-    4-parameter scaling law: loss(x) = a / (x^c + b) + d
-
-    Args:
-        data_points: array-like, training sizes x
-        params: length-4 array [a, b, c, d]
-
-    Returns:
-        predicted losses, same shape as data_points
+    Offset power-law form:
+        L(N) = A * (N + x0)^(-alpha) + B
+    params: [A, alpha, x0, B]
     """
-    x = np.asarray(data_points, dtype=np.float64)
-    x = np.maximum(x, 1e-12)
-    a, b, c, d = params
-    # enforce positivity
-    a = np.maximum(a, 1e-12)
-    b = np.maximum(b, 1e-12)
-    c = np.maximum(c, 1e-12)
-    d = np.maximum(d, 0.0)
-    with np.errstate(divide='ignore', invalid='ignore'):
-        denom = np.power(x, c) + b
-        loss = a / denom + d
-    return loss
+    A, alpha, x0, B = params
+    x = np.asarray(data_points, dtype=float)
+    x_safe = np.maximum(x + x0, 1e-16)
+    return A * np.power(x_safe, -alpha) + B
 
-def fit_scaling_law(data_points, loss_values, initial_params=None):
+def fit_scaling_law(data_points, loss_values):
     """
-    Fit the 4-parameter scaling law to data.
-
-    Args:
-        data_points: array-like, x values
-        loss_values: array-like, observed losses y
-        initial_params: optional length-4 initial guess
-
-    Returns:
-        best_params: length-4 optimized parameters
+    Fit the offset power-law scaling law:
+      1) Global 2D search over B and x0 via differential evolution,
+         with closed-form linear regression for A and alpha.
+      2) Multi-start L-BFGS-B refinement on all 4 parameters.
+    Objective: minimize normalized MSE (NMSE).
     """
-    x = np.asarray(data_points, dtype=np.float64)
-    y = np.asarray(loss_values, dtype=np.float64)
-    # remove non-positive y for log fits
-    mask = (x > 0) & (y > 0)
-    x_fit, y_fit = x[mask], y[mask]
+    x = np.asarray(data_points, dtype=float)
+    y = np.asarray(loss_values, dtype=float)
+    n = len(x)
+    if n < 2:
+        # Not enough points: return trivial params
+        return np.array([1.0, 1.0, 0.0, 0.0], dtype=float)
 
-    # bounds: a, b, c, d
-    y_max = np.max(y_fit)
-    bounds = [
-        (1e-8, max(1e-8, y_max * (np.max(x_fit) ** 1))),  # a
-        (1e-8, np.max(x_fit) ** 1.5 + 1e2),               # b
-        (1e-4,  10.0),                                    # c
-        (0.0,   y_max)                                    # d
-    ]
+    x_max = np.max(x)
+    y_min, y_max = np.min(y), np.max(y)
 
-    # objective: MSE
-    def obj_fn(p):
-        preds = scaling_law_func(x, p)
-        if not np.all(np.isfinite(preds)):
+    # Bounds for B and x0 in DE
+    B_up = max(y_min * 0.9, 1e-6)
+    B_bounds = (0.0, B_up)
+    x0_bounds = (0.0, x_max)
+
+    # Objective for DE: given [B, x0], estimate A and alpha via log-linear fit
+    def obj_Bx0(bx):
+        B_val, x0_val = float(bx[0]), float(bx[1])
+        y_adj = y - B_val
+        if x0_val < 0 or np.any(y_adj <= 0):
             return 1e6
-        return np.mean((preds - y) ** 2)
+        xa = x + x0_val
+        if np.any(xa <= 0):
+            return 1e6
+        log_x = np.log(xa)
+        log_y = np.log(y_adj)
+        # slope m, intercept c
+        m, c = np.polyfit(log_x, log_y, 1)
+        alpha = -m
+        A = np.exp(c)
+        if A <= 0 or alpha <= 0:
+            return 1e6
+        y_pred = A * np.power(xa, -alpha) + B_val
+        return np.sum((y_pred - y) ** 2) / np.sum(y ** 2)
 
-    # Heuristic initialization via endpoint power‐law fit
-    inits = []
-    try:
-        d0 = np.min(y_fit) * 0.9
-        y0 = np.clip(y_fit - d0, 1e-12, None)
-        logx, logy0 = np.log(x_fit), np.log(y0)
-        slope, intercept = np.polyfit(logx, logy0, 1)
-        c0 = max(1e-3, -slope)
-        a0 = max(1e-6, np.exp(intercept))
-        b0 = max(1e-6, np.median(np.power(x_fit, c0)))
-        inits.append(np.array([a0, b0, c0, d0], dtype=np.float64))
-    except Exception:
-        pass
-
-    # Include user-provided init if valid
-    if initial_params is not None and len(initial_params) == 4:
-        inits.append(np.array(initial_params, dtype=np.float64))
-
-    # Global optimization: Differential Evolution
+    # 1) 2D global search for B, x0
     try:
         de_res = differential_evolution(
-            func=obj_fn,
-            bounds=bounds,
+            obj_Bx0,
+            bounds=[B_bounds, x0_bounds],
             strategy='best1bin',
-            maxiter=30,
-            popsize=15,
+            maxiter=60,
+            popsize=12,
             tol=1e-5,
-            polish=False,
-            seed=42,
+            mutation=(0.5, 1),
+            recombination=0.7,
+            seed=123,
+            polish=True,
             disp=False
         )
-        if de_res.success:
-            inits.append(de_res.x)
+        B0, x0_0 = de_res.x
     except Exception:
-        pass
+        B0, x0_0 = 0.0, 0.0
 
-    # Add a few random starts around bounds
-    rng = np.random.RandomState(2024)
+    # Closed-form estimates for A and alpha
+    y_adj = y - B0
+    mask = y_adj > 0
+    if mask.sum() >= 2:
+        xa = x + x0_0
+        log_x = np.log(xa[mask])
+        log_y = np.log(y_adj[mask])
+        m, c = np.polyfit(log_x, log_y, 1)
+        alpha0 = max(-m, 1e-6)
+        A0 = max(np.exp(c), 1e-6)
+    else:
+        A0, alpha0 = y_max, 1.0
+
+    init_params = np.array([A0, alpha0, x0_0, B0], dtype=float)
+
+    # Bounds for all parameters: (A, alpha, x0, B)
+    bounds = [
+        (1e-12, y_max * 10.0),   # A
+        (1e-6,    10.0),         # alpha
+        (0.0,     x_max),        # x0
+        (0.0,     y_max)         # B
+    ]
+
+    # NMSE objective for full 4-parameter fit
+    def nmse(params):
+        y_pred = scaling_law_func(x, params)
+        return np.sum((y_pred - y) ** 2) / np.sum(y ** 2)
+
+    # Multi-start local refinement
+    best_params = init_params.copy()
+    best_score = nmse(best_params)
+    rng = np.random.default_rng(456)
+    starts = [best_params]
     for _ in range(4):
-        rnd = np.array([rng.uniform(lb, ub) for (lb, ub) in bounds], dtype=np.float64)
-        inits.append(rnd)
+        perturb = rng.normal(1.0, 0.1, size=4)
+        trial = best_params * perturb
+        # clip within bounds
+        for i, (lo, hi) in enumerate(bounds):
+            trial[i] = np.clip(trial[i], lo + 1e-12, hi - 1e-12)
+        starts.append(trial)
 
-    # Local refinement from all inits
-    best_val = np.inf
-    best_params = None
-    for p0 in inits:
+    for start in starts:
         try:
             res = minimize(
-                fun=obj_fn,
-                x0=p0,
+                nmse,
+                start,
                 method='L-BFGS-B',
                 bounds=bounds,
-                options={'ftol':1e-12, 'gtol':1e-8, 'maxiter':500}
+                options={'ftol': 1e-9, 'gtol': 1e-7, 'maxiter': 1000, 'disp': False}
             )
-            if res.success and res.fun < best_val:
-                best_val = res.fun
-                best_params = res.x
-                if best_val < 1e-10:
-                    break
+            if res.success and res.fun < best_score:
+                best_score = res.fun
+                best_params = res.x.copy()
         except Exception:
             continue
 
-    # Fallback: if nothing converged, pick heuristic or zeros
-    if best_params is None:
-        if inits:
-            best_params = inits[0]
-        else:
-            best_params = np.array([1.0, 1.0, 1.0, 0.0], dtype=np.float64)
-
-    # Ensure shape
-    best_params = np.asarray(best_params, dtype=np.float64).flatten()[:4]
     return best_params
 
-# Expose parameter count
+# annotate number of parameters
 scaling_law_func.num_params = 4
 # EVOLVE-BLOCK-END
-
-if __name__ == "__main__":
-    # Direct testing on CSV data
-    data_dir = "data"
-    csv_files = ["flan.csv", "gigaword.csv", "wmt19.csv"]
-    data_sizes = np.array([
-        200, 400, 800, 1600, 3200, 6400,
-        12800, 25600, 51200, 102400,
-        204800, 409600, 819200, 1638400
-    ], dtype=np.float64)
-
-    for csv_file in csv_files:
-        print(f"\n{'='*60}\nDataset: {csv_file}\n{'='*60}")
-        df = pd.read_csv(os.path.join(data_dir, csv_file))
-        # assume columns: config name, size, family, then per-size losses
-        loss_cols = [c for c in df.columns if c not in ['config name', 'size', 'family']]
-        for _, row in df.iterrows():
-            model_name = row['config name']
-            xs, ys = [], []
-            for idx, col in enumerate(loss_cols):
-                val = row[col]
-                if pd.notna(val) and val > 0:
-                    xs.append(data_sizes[idx])
-                    ys.append(float(val))
-            if len(xs) < 4:
-                print(f"Model {model_name}: insufficient data, skipping.")
-                continue
-            xs_arr, ys_arr = np.array(xs), np.array(ys)
-            params = fit_scaling_law(xs_arr, ys_arr)
-            preds = scaling_law_func(xs_arr, params)
-            mse = np.mean((preds - ys_arr) ** 2)
-            print(f"\nModel: {model_name}")
-            print(f"  Data points: {len(xs_arr)}; x-range: {xs_arr.min():.0f}–{xs_arr.max():.0f}")
-            print(f"  Loss-range: {ys_arr.max():.4f}–{ys_arr.min():.4f}")
-            print(f"  Fitted params: {params}")
-            print(f"  MSE: {mse:.6e}")
-            print(f"  Model size: {int(row['size']):,}, family: {row['family']}")

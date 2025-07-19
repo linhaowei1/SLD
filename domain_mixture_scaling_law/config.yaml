@@ -1,0 +1,80 @@
+# Configuration for domain mixture scaling law discovery with OpenEvolve
+max_iterations: 50
+checkpoint_interval: 1
+log_level: "INFO"
+random_seed: 42
+
+# LLM configuration
+llm:
+  models:
+    - name: "o4-mini"
+      weight: 1.0
+  api_base: "https://api.openai.com/v1"
+  max_tokens: 16384
+  timeout: 120
+  retries: 3
+  retry_delay: 5
+
+# Prompt configuration
+prompt:
+  system_message: |
+    You are an expert in scaling laws and machine learning who specializes in discovering and improving scaling law functions for domain mixture scenarios. Your task is to evolve both the `scaling_law_func` function and the `fit_scaling_law` optimization algorithm to better model the relationship between five domain proportions and the loss for each individual domain.
+
+    **IMPORTANT: The scaling law function must use no more than 7 parameters per domain loss equation.**
+
+    Focus on mathematical accuracy across different domain mixture settings, cross-dataset generalization, parameter efficiency (simple forms that can be fitted with limited data), and numerical/theoretical stability.
+
+    **DATA CHARACTERISTICS:**
+    - Model sizes: 70M, 160M, 305M, 410M parameters (4 unique sizes)
+    - Domain mixture proportions: 5 domains with proportions that sum to 1.0
+    - For each model size and mixture ratio:
+      - 5 domain proportions (p1, p2, p3, p4, p5) where sum(p) = 1.0
+      - 5 corresponding loss values (L1, L2, L3, L4, L5) for each domain
+    - The goal is to fit 5 domain loss equations: Li = f(p1, p2, p3, p4, p5, params_i)
+    - All 5 domain loss equations should have the same mathematical expression but different coefficients
+    - Each domain equation uses at most 7 parameters
+
+    The function signatures must remain:
+    ```python
+    def scaling_law_func(proportions, params):
+        # proportions: Array of domain proportions [p1, p2, p3, p4, p5] for each data point
+        # params: Array of parameters (5 domains × 7 params = 35 parameters max)
+        # Returns: Predicted loss values [L1, L2, L3, L4, L5] for each data point
+
+    def fit_scaling_law(proportions, loss_values):
+        # proportions: Array of domain proportions for all data points
+        # loss_values: Array of corresponding loss values for all domains
+        # Returns: Optimized parameters (up to 35 parameters for 5 domains)
+    ```
+
+    Write all improvements between # EVOLVE-BLOCK-START and # EVOLVE-BLOCK-END markers.
+
+  num_top_programs: 3
+  num_diverse_programs: 2
+  use_template_stochasticity: true
+
+# Database configuration for evolution
+database:
+  population_size: 100
+  archive_size: 50
+  num_islands: 3
+  migration_interval: 20
+  migration_rate: 0.1
+  elite_selection_ratio: 0.1
+  exploration_ratio: 0.2
+  exploitation_ratio: 0.7
+  feature_dimensions: ["combined_score"]
+  feature_bins: 10
+
+# Evaluator configuration
+evaluator:
+  timeout: 600
+  max_retries: 3
+  cascade_evaluation: false
+  cascade_thresholds: [0.3, 0.6]
+  parallel_evaluations: 4
+  use_llm_feedback: false
+
+# Evolution settings
+diff_based_evolution: false
+max_code_length: 10000

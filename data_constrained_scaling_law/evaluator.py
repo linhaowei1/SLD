@@ -6,6 +6,7 @@ import importlib.util
 import numpy as np
 import pandas as pd
 import os
+import sys
 import time
 import traceback
 import tempfile
@@ -13,25 +14,35 @@ import concurrent.futures
 from pathlib import Path
 from typing import Dict, Any, List, Tuple
 from scipy.stats import pearsonr
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+
+# Add parent directory to path for data_loader import
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from data_loader import load_data
 
 def get_failure_result() -> Dict[str, float]:
     """
     Return standard result for failure cases, ensuring same key structure as success cases
     """
-    # Use 100000 as worst MSE score (very large MSE value)
+    # Use 100000 as worst values
     worst_mse = 100000.0
+    worst_mae = 100000.0
+    worst_nmse = 100000.0
+    worst_r2 = -1.0  # Worst R2 score
     # Corresponding worst combined_score (close to 0)
-    worst_score = 1.0 / (1.0 + worst_mse)
+    worst_score = 1.0 / (1.0 + worst_nmse)
     
     result = {
         "mse": worst_mse,
+        "r2": worst_r2,
+        "mae": worst_mae,
+        "nmse": worst_nmse,
         "combined_score": worst_score,
     }
     
     return result
 
-def run_with_timeout(func, args=(), kwargs={}, timeout_seconds=600):
+def run_with_timeout(func, args=(), kwargs={}, timeout_seconds=30):
     """
     Run function with timeout
     
@@ -46,18 +57,14 @@ def run_with_timeout(func, args=(), kwargs={}, timeout_seconds=600):
     """
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         future = executor.submit(func, *args, **kwargs)
-        try:
-            result = future.result(timeout=timeout_seconds)
-            return result
-        except concurrent.futures.TimeoutError:
-            raise TimeoutError(f"Function execution timeout, exceeded {timeout_seconds} seconds")
+        result = future.result(timeout=timeout_seconds)
+        return result
 
 def safe_float(value):
     """Safely convert value to float"""
-    try:
+    if isinstance(value, (int, float)):
         return float(value)
-    except (TypeError, ValueError):
-        return 0.0
+    return 0.0
 
 def evaluate_fit_quality(predicted_values: np.ndarray, true_values: np.ndarray) -> Dict[str, float]:
     """
@@ -70,149 +77,206 @@ def evaluate_fit_quality(predicted_values: np.ndarray, true_values: np.ndarray) 
     Returns:
         Dictionary containing various evaluation metrics
     """
-    try:
-        # Ensure inputs are numpy arrays
-        predicted = np.asarray(predicted_values, dtype=float)
-        true = np.asarray(true_values, dtype=float)
+    # Ensure inputs are numpy arrays
+    predicted = np.asarray(predicted_values, dtype=float)
+    true = np.asarray(true_values, dtype=float)
+    
+    # Check shape matching
+    if predicted.shape != true.shape:
+        return {"error": "Predicted and true values shape mismatch"}
         
-        # Check shape matching
-        if predicted.shape != true.shape:
-            return {"error": "Predicted and true values shape mismatch"}
-            
-        # Filter out invalid values
-        valid_mask = ~(np.isnan(predicted) | np.isnan(true) | np.isinf(predicted) | np.isinf(true))
-        if not np.any(valid_mask):
-            return {"error": "All predicted values are invalid"}
-            
-        pred_filtered = predicted[valid_mask]
-        true_filtered = true[valid_mask]
+    # Filter out invalid values
+    valid_mask = ~(np.isnan(predicted) | np.isnan(true) | np.isinf(predicted) | np.isinf(true))
+    if not np.any(valid_mask):
+        return {"error": "All predicted values are invalid"}
         
-        if len(pred_filtered) < 2:
-            return {"error": "Insufficient valid data points"}
-        
-        # Calculate evaluation metrics
-        mse = mean_squared_error(true_filtered, pred_filtered)
-        rmse = np.sqrt(mse)
-        
-        # R² score
-        r2 = r2_score(true_filtered, pred_filtered)
-        
-        # Pearson correlation coefficient
-        correlation, _ = pearsonr(true_filtered, pred_filtered)
-        
-        # Mean Absolute Percentage Error
-        mape = np.mean(np.abs((true_filtered - pred_filtered) / true_filtered)) * 100
-        
-        # Normalized Root Mean Square Error
-        nrmse = rmse / (np.max(true_filtered) - np.min(true_filtered))
-        
-        return {
-            "mse": float(mse),
-            "rmse": float(rmse),
-            "r2": float(r2),
-            "correlation": float(correlation),
-            "mape": float(mape),
-            "nrmse": float(nrmse),
-            "valid_points": int(len(pred_filtered))
-        }
-        
-    except Exception as e:
-        return {"error": f"Error during evaluation: {str(e)}"}
+    pred_filtered = predicted[valid_mask]
+    true_filtered = true[valid_mask]
+    
+    if len(pred_filtered) < 1:
+        return {"error": "Insufficient valid data points"}
+    
+    # Calculate evaluation metrics
+    mse = mean_squared_error(true_filtered, pred_filtered)
+    rmse = np.sqrt(mse)
+    
+    # Mean Absolute Error
+    mae = mean_absolute_error(true_filtered, pred_filtered)
+    
+    # Normalized Mean Square Error (MSE normalized by variance of true values)
+    true_var = np.var(true_filtered)
+    nmse = mse / true_var if true_var > 0 else mse
+    r2 = 1 - nmse
+    
+    return {
+        "mse": float(mse),
+        "rmse": float(rmse),
+        "r2": float(r2),
+        "mae": float(mae),
+        "nmse": float(nmse),
+        "valid_points": int(len(pred_filtered))
+    }
 
-def evaluate(program_path: str) -> Dict[str, float]:
+def evaluate(program_path: str, use_test_data: bool = False, fitted_params: Dict = None, return_metrics: bool = True) -> Dict[str, float]:
     """
     Main function to evaluate scaling law programs
     
     Args:
         program_path: Program file path
+        use_test_data: If True, use test data; if False, use training data
+        fitted_params: Pre-fitted parameters to use for prediction
+        return_metrics: If True, return metrics; if False, return fitted parameters
         
     Returns:
-        Dictionary containing evaluation metrics
+        Dictionary containing evaluation metrics or fitted parameters
     """
-    try:
-        # Load program
-        spec = importlib.util.spec_from_file_location("scaling_law_func", program_path)
-        if spec is None or spec.loader is None:
-            return get_failure_result()
-            
-        program = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(program)
+    # Load program
+    spec = importlib.util.spec_from_file_location("scaling_law_func", program_path)
+    if spec is None or spec.loader is None:
+        return get_failure_result()
         
-        # Check if required functions exist
-        if not hasattr(program, "scaling_law_func"):
-            return get_failure_result()
-            
-        if not hasattr(program, "fit_scaling_law"):
-            return get_failure_result()
+    program = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(program)
+    
+    # Check if required functions exist
+    if not hasattr(program, "scaling_law_func"):
+        return get_failure_result()
         
-        scaling_law_func = program.scaling_law_func
-        fit_scaling_law = program.fit_scaling_law
+    if not hasattr(program, "fit_scaling_law"):
+        return get_failure_result()
+    
+    scaling_law_func = program.scaling_law_func
+    fit_scaling_law = program.fit_scaling_law
+    
+    # Load the data using unified data loader
+    data_points = load_data(
+        "data_constrained_scaling_law", 
+        train=not use_test_data
+    )
+    
+    if not data_points:
+        return get_failure_result()
+    
+    # Aggregate all loss values and data sizes from all data points
+    all_loss_values = []
+    all_tokens = []
+    all_model_size = []
+    all_unique_tokens = []
+    
+    for point in data_points:
+        # Each point has loss_values (single element) and data_size (tokens)
+        all_loss_values.extend(point["loss_values"])
+        all_tokens.extend(point["data_size"])
+        all_model_size.extend(point["model_size"])
+        all_unique_tokens.extend(point['unique_tokens'])
         
-        # Load the data
-        try:
-            df = pd.read_csv("data/data.csv")
-        except FileNotFoundError:
-            return get_failure_result()
+    tokens = np.array(all_tokens)
+    loss_values = np.array(all_loss_values)
+    model_size = np.array(all_model_size)  
+    unique_tokens = np.array(all_unique_tokens)
+    
+    if fitted_params is None and not return_metrics:
+        # Training mode: fit the scaling law on all training data and return parameters
+        start_time = time.time()
+        fitted_params = run_with_timeout(
+            fit_scaling_law,
+            args=(tokens, model_size, unique_tokens, loss_values),
+            timeout_seconds=600
+        )
+        fit_time = time.time() - start_time
         
-        tokens = df['tokens'].values
-        model_size = df['params'].values
-        unique_tokens = df['unique_tokens'].values
-        loss_values = df['loss'].values
-        
-        try:
-            # Fit the scaling law with timeout
-            start_time = time.time()
+        return {"fitted_params": fitted_params}
+    elif fitted_params is not None or return_metrics:
+        # Testing/evaluation mode: use fitted parameters or fit and return metrics
+        if fitted_params is None:
+            # Need to fit first
             fitted_params = run_with_timeout(
                 fit_scaling_law,
                 args=(tokens, model_size, unique_tokens, loss_values),
                 timeout_seconds=600
             )
-            fit_time = time.time() - start_time
-            
-            # Generate predictions
-            predicted_loss = run_with_timeout(
-                scaling_law_func,
-                args=(tokens, model_size, unique_tokens, fitted_params),
-                timeout_seconds=600
-            )
-            
-            # Evaluate fit quality
-            metrics = evaluate_fit_quality(predicted_loss, loss_values)
-            
-            if "error" in metrics:
-                return get_failure_result()
-            
-            # Only use MSE as evaluation metric
-            mse_value = metrics["mse"]
-            
-            # Calculate combined_score: use 1/(1+mse) so that smaller mse gives larger score (higher is better)
-            combined_score = 1.0 / (1.0 + mse_value)
-            
-            # Prepare return result
-            result = {
-                "mse": float(mse_value),
-                "combined_score": float(combined_score),
-            }
-            
-            return result
-            
-        except TimeoutError as e:
-            return get_failure_result()
-        except Exception as e:
+        
+        # Use parameters to predict and evaluate
+        predicted_loss = run_with_timeout(
+            scaling_law_func,
+            args=(tokens, model_size, unique_tokens, fitted_params),
+            timeout_seconds=600
+        )
+        
+        # Evaluate fit quality
+        metrics = evaluate_fit_quality(predicted_loss, loss_values)
+        
+        if "error" in metrics:
             return get_failure_result()
         
-    except Exception as e:
-        return get_failure_result()
+        # Extract evaluation metrics
+        mse_value = metrics["mse"]
+        r2_value = metrics["r2"]
+        mae_value = metrics["mae"]
+        nmse_value = metrics["nmse"]
+        
+        # Calculate combined_score: use 1/(1+nmse) so that smaller nmse gives larger score (higher is better)
+        combined_score = 1.0 / (1.0 + nmse_value)
+        
+        # Prepare return result
+        result = {
+            "mse": float(mse_value),
+            "r2": float(r2_value),
+            "mae": float(mae_value),
+            "nmse": float(nmse_value),
+            "combined_score": float(combined_score),
+        }
+        
+        return result
 
 if __name__ == "__main__":
     import sys
     
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
+        print("Usage: python evaluate.py <program_path>")
         sys.exit(1)
     
     program_path = sys.argv[1]
     
-    result = evaluate(program_path)
+    # Load program
+    spec = importlib.util.spec_from_file_location("scaling_law_func", program_path)
+    if spec is None or spec.loader is None:
+        print("Error: Could not load program")
+        sys.exit(1)
+        
+    program = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(program)
     
-    for key, value in result.items():
-        print(f"{key}: {value}")
+    # Check if required functions exist
+    if not hasattr(program, "scaling_law_func") or not hasattr(program, "fit_scaling_law"):
+        print("Error: Program must have 'scaling_law_func' and 'fit_scaling_law' functions")
+        sys.exit(1)
+        
+    scaling_law_func = program.scaling_law_func
+    fit_scaling_law = program.fit_scaling_law
+    
+    # Step 1: Use training data to fit one scaling law on all training data
+    print("# Step 1: Fitting scaling law on ALL TRAINING data")
+    train_result = evaluate(program_path, use_test_data=False, fitted_params=None, return_metrics=False)
+    
+    if "fitted_params" not in train_result:
+        print("Error: Failed to fit parameters on training data")
+        sys.exit(1)
+    
+    fitted_params = train_result["fitted_params"]
+    print(f"Successfully fitted scaling law parameters")
+    
+    # Step 2: Use test data with fitted parameters for evaluation
+    print("# Step 2: Evaluating fitted law on ALL TEST data")
+    test_result = evaluate(program_path, use_test_data=True, fitted_params=fitted_params)
+    
+    if "mse" not in test_result:
+        print("Error: Failed to evaluate on test data")
+        sys.exit(1)
+    
+    # Print test results
+    print(f"mse: {test_result['mse']}")
+    print(f"r2: {test_result['r2']}")
+    print(f"mae: {test_result['mae']}")
+    print(f"nmse: {test_result['nmse']}")
+    print(f"combined_score: {test_result['combined_score']}")

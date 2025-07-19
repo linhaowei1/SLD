@@ -1,13 +1,16 @@
 {
-  "id": "a2bf6d13-e2fc-4e27-bfdb-1cf51b8d6d19",
-  "generation": 2,
-  "iteration": 7,
-  "timestamp": 1752759210.7075062,
-  "parent_id": "b1f8f920-4aff-43cd-b92e-b84736c6521d",
+  "id": "8be9cea3-fbd1-4caf-9f50-c53b1b81ff12",
+  "generation": 1,
+  "iteration": 1,
+  "timestamp": 1752861794.8458326,
+  "parent_id": "cc7252ea-a76e-4b55-93d2-913f0a19fdd8",
   "metrics": {
-    "mse": 0.06728960868298042,
-    "combined_score": 0.936952811930761
+    "mse": 0.03275299888396631,
+    "r2": 0.9707892537000398,
+    "mae": 0.1295963631160775,
+    "nmse": 0.02921074629996026,
+    "combined_score": 0.971618304215173
   },
   "language": "python",
-  "saved_at": 1752759625.3554468
+  "saved_at": 1752862241.211739
 }

@@ -1,0 +1,80 @@
+# Configuration for MoE scaling law discovery with OpenEvolve
+max_iterations: 50
+checkpoint_interval: 1
+log_level: "INFO"
+random_seed: 42
+
+# LLM configuration
+llm:
+  models:
+    - name: "o4-mini"
+      weight: 1.0
+  api_base: "https://api.openai.com/v1"
+  max_tokens: 16384
+  timeout: 120
+  retries: 3
+  retry_delay: 5
+
+# Prompt configuration
+prompt:
+  system_message: |
+    You are an expert in scaling laws and machine learning who specializes in discovering and improving scaling law functions for Mixture of Experts (MoE) models. Your task is to evolve both the `scaling_law_func` function and the `fit_scaling_law` optimization algorithm to better model the relationship between number of experts, total parameter count, and model loss.
+
+    **IMPORTANT: The scaling law function must use no more than 6 parameters.**
+
+    Focus on mathematical accuracy across different MoE configurations, parameter efficiency (simple forms that can be fitted with limited data), and numerical/theoretical stability.
+
+    **DATA CHARACTERISTICS (221 data points from step 249000):**
+    - Number of Experts: varies across different MoE configurations
+    - Total Parameter Count: varies with model size and expert configuration
+    - Loss Validation: the target loss values to predict at step 249000
+    - All data points are from MoE training experiments with different expert counts and parameter configurations on the same pre-training corpus at step 249000
+
+    The dataset contains validation loss data from MoE models with different expert configurations at training step 249000, showing how validation loss relates to the number of experts and total parameter count at this specific training checkpoint.
+
+    The function signatures must remain:
+    ```python
+    def scaling_law_func(num_experts, total_parameter_count, params):
+        # num_experts: Array of number of experts
+        # total_parameter_count: Array of total parameter counts
+        # params: Array of up to 6 parameters
+        # Returns: Predicted loss values
+
+    def fit_scaling_law(num_experts, total_parameter_count, loss_values):
+        # num_experts: Array of number of experts
+        # total_parameter_count: Array of total parameter counts
+        # loss_values: Array of corresponding loss values
+        # Returns: Optimized parameters (up to 6 parameters)
+    ```
+
+    Write all improvements between # EVOLVE-BLOCK-START and # EVOLVE-BLOCK-END markers.
+
+  num_top_programs: 3
+  num_diverse_programs: 2
+  use_template_stochasticity: true
+
+# Database configuration for evolution
+database:
+  population_size: 100
+  archive_size: 50
+  num_islands: 3
+  migration_interval: 20
+  migration_rate: 0.1
+  elite_selection_ratio: 0.1
+  exploration_ratio: 0.2
+  exploitation_ratio: 0.7
+  feature_dimensions: ["combined_score"]
+  feature_bins: 10
+
+# Evaluator configuration
+evaluator:
+  timeout: 600
+  max_retries: 3
+  cascade_evaluation: false
+  cascade_thresholds: [0.3, 0.6]
+  parallel_evaluations: 4
+  use_llm_feedback: false
+
+# Evolution settings
+diff_based_evolution: false
+max_code_length: 10000

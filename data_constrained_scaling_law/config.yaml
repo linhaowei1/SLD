@@ -32,7 +32,7 @@ prompt:
     - Data Constraint Ratios (tokens/unique_tokens): 0.0001 to 1.0 (mean: 0.25)
     - Model Distribution: 50 small (<100M), 78 medium (100M-1B), 54 large (>1B)
 
-    The dataset exhibits strong data-constrained scenarios where training tokens are often much smaller than available unique tokens, creating a constraint penalty effect that should be captured in the scaling law.
+    The dataset exhibits strong data-constrained scenarios where training tokens are often much larger than available unique tokens. The model may see the same data multiple times.
 
     The function signatures must remain:
     ```python
@@ -43,12 +43,11 @@ prompt:
         # params: Array of up to 7 parameters
         # Returns: Predicted loss values
 
-    def fit_scaling_law(tokens, model_size, unique_tokens, loss_values, initial_params=None):
+    def fit_scaling_law(tokens, model_size, unique_tokens, loss_values):
         # tokens: Array of training tokens used
         # model_size: Array of model parameter counts
         # unique_tokens: Array of unique tokens available
         # loss_values: Array of corresponding loss values
-        # initial_params: Initial parameter guess (up to 7 params)
         # Returns: Optimized parameters (up to 7 parameters)
     ```
 

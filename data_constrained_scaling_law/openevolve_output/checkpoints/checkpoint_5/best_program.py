@@ -1,168 +1,76 @@
 # EVOLVE-BLOCK-START
 """
-Data-constrained scaling law discovery for LLM training scenarios
-Revised for simplicity, stability, and efficient parameter fitting
-Uses a 6-parameter form:
-    L = E + A * (N/N_ref)^(-beta) * (T/T_ref)^(-alpha) * (1 + C * (T/T_ref ÷ U/U_ref)^gamma)
+Data‐constrained scaling law discovery for LLM training scenarios.
+Improved functional form and robust fitting for up to 7 parameters.
 """
 import numpy as np
-from scipy.optimize import minimize
+from scipy.optimize import least_squares
 
 def scaling_law_func(tokens, model_size, unique_tokens, params):
     """
-    Predict loss given training tokens, model size, and unique token budget.
-    Uses a normalized, data-constrained scaling law with 6 parameters.
+    Predict loss given tokens, model size, and available unique tokens.
     
-    Args:
-        tokens: array-like, training token counts
-        model_size: array-like, model parameter counts
-        unique_tokens: array-like, unique tokens available
-        params: [A, alpha, beta, C, gamma, E]
-            A     : scale coefficient (>0)
-            alpha : token scaling exponent (>0)
-            beta  : model scaling exponent (>0)
-            C     : constraint penalty coefficient (>=0)
-            gamma : constraint penalty exponent (>=0)
-            E     : irreducible loss floor (>=0)
-    Returns:
-        loss_pred: numpy array of predicted losses
+    Functional form:
+      ratio = tokens / unique_tokens
+      rep_factor = (1 - exp(- ratio / d))^g
+      Teff = unique_tokens * rep_factor
+      loss = a + b * model_size^{-p} + c * Teff^{-q}
+    
+    params = [a, b, p, c, q, d, g]  (7 parameters)
     """
-    # Unpack and enforce positivity where needed
-    A, alpha, beta, C, gamma, E = params
-    A     = max(A,     1e-12)
-    alpha = max(alpha, 1e-12)
-    beta  = max(beta,  1e-12)
-    C     = max(C,     0.0)
-    gamma = max(gamma, 0.0)
-    E     = max(E,     0.0)
-    
-    # Convert to numpy arrays
-    T = np.asarray(tokens, dtype=float)
-    N = np.asarray(model_size, dtype=float)
-    U = np.asarray(unique_tokens, dtype=float)
-    
-    # Reference scales (median) for normalization
-    T_ref = np.median(T)
-    N_ref = np.median(N)
-    U_ref = np.median(U)
-    
-    # Avoid division by zero
-    T_ref = max(T_ref, 1.0)
-    N_ref = max(N_ref, 1.0)
-    U_ref = max(U_ref, 1.0)
-    
-    # Normalized variables
-    Tn = T / T_ref
-    Nn = N / N_ref
-    Un = U / U_ref
-    
-    # Core scaling law with data-constraint penalty
-    base = (Nn ** (-beta)) * (Tn ** (-alpha))
-    penalty = 1.0 + C * (Tn / Un) ** gamma
-    loss = E + A * base * penalty
-    
+    # Unpack parameters
+    a, b, p, c, q, d, g = params
+    # Prevent division by zero
+    U = np.maximum(unique_tokens, 1.0)
+    # Repetition ratio
+    ratio = tokens / U
+    # Effective data coverage factor
+    rep_factor = np.power(1.0 - np.exp(- ratio / np.maximum(d, 1e-8)), np.maximum(g, 1e-8))
+    Teff = U * rep_factor
+    # Model‐size and data contributions
+    loss = a + b * np.power(model_size, -np.maximum(p, 1e-8)) \
+               + c * np.power(Teff + 1e-8, -np.maximum(q, 1e-8))
     return loss
 
-def fit_scaling_law(tokens, model_size, unique_tokens, loss_values, initial_params=None):
+def fit_scaling_law(tokens, model_size, unique_tokens, loss_values):
     """
-    Fit the 6-parameter scaling law via MSE minimization.
+    Fit the 7-parameter scaling law to observed loss values.
     
-    Args:
-        tokens: array-like, training tokens
-        model_size: array-like, model parameters
-        unique_tokens: array-like, unique tokens available
-        loss_values: array-like, observed losses
-        initial_params: optional list of 6 initial guesses [A, alpha, beta, C, gamma, E]
-    Returns:
-        fitted_params: array of 6 optimized parameters
+    Uses bounded nonlinear least squares for stability.
     """
-    # Vectorize inputs
-    T = np.asarray(tokens, dtype=float)
-    N = np.asarray(model_size, dtype=float)
-    U = np.asarray(unique_tokens, dtype=float)
-    L = np.asarray(loss_values, dtype=float)
-    
-    # Default initial guess if none provided
-    if initial_params is None:
-        A0     = 1.0
-        alpha0 = 0.3
-        beta0  = 0.07
-        C0     = 1.0
-        gamma0 = 0.5
-        E0     = max(np.min(L) * 0.5, 1e-3)
-        initial_params = [A0, alpha0, beta0, C0, gamma0, E0]
-    else:
-        initial_params = list(initial_params)[:6]
-    
-    # Bounds for stability
-    bounds = [
-        (1e-6, 1e2),   # A
-        (1e-6, 2.0),   # alpha
-        (1e-6, 2.0),   # beta
-        (0.0, 10.0),   # C
-        (0.0, 3.0),    # gamma
-        (0.0, 10.0)    # E
-    ]
-    
-    # Objective: mean squared error
-    def objective(p):
-        pred = scaling_law_func(T, N, U, p)
-        return np.mean((pred - L) ** 2)
-    
-    # Optimize
-    res = minimize(objective, initial_params, method='L-BFGS-B', bounds=bounds)
-    if res.success:
-        fitted = res.x
-    else:
-        fitted = np.array(initial_params, dtype=float)
-    
-    return fitted
+    # Initial parameter guesses
+    a0 = np.min(loss_values) * 0.9
+    b0 = (np.max(loss_values) - np.min(loss_values)) * 0.5
+    c0 = b0
+    p0, q0 = 0.5, 0.5
+    d0, g0 = 1.0, 1.0
+    x0 = np.array([a0, b0, p0, c0, q0, d0, g0])
 
-# Number of parameters expected
-scaling_law_func.num_params = 6
+    # Parameter bounds
+    lower = np.array([0.0,    0.0,    1e-3,   0.0,    1e-3,   1e-6,  1e-3])
+    upper = np.array([np.inf, np.inf, 10.0,   np.inf, 10.0,   np.inf, 10.0])
 
+    def residuals(params):
+        pred = scaling_law_func(tokens, model_size, unique_tokens, params)
+        return pred - loss_values
+
+    try:
+        res = least_squares(
+            residuals,
+            x0,
+            bounds=(lower, upper),
+            method='trf',
+            ftol=1e-8,
+            xtol=1e-8,
+            gtol=1e-8,
+            max_nfev=2000
+        )
+        params_opt = res.x if res.success else x0
+    except Exception:
+        params_opt = x0
+
+    return params_opt
+
+# Expose expected number of parameters
+scaling_law_func.num_params = 7
 # EVOLVE-BLOCK-END
-
-if __name__ == "__main__":
-    import pandas as pd
-    import os
-    
-    # Load data
-    datapath = os.path.join("data", "data.csv")
-    df = pd.read_csv(datapath)
-    tokens = df['tokens'].values
-    model_size = df['params'].values
-    unique_tokens = df['unique_tokens'].values
-    loss = df['loss'].values
-    
-    print(f"Loaded {len(df)} data points")
-    print(f"Token range: {tokens.min():.2e} - {tokens.max():.2e}")
-    print(f"Model size range: {model_size.min():.2e} - {model_size.max():.2e}")
-    print(f"Unique token range: {unique_tokens.min():.2e} - {unique_tokens.max():.2e}")
-    print(f"Loss range: {loss.min():.4f} - {loss.max():.4f}")
-    
-    # Fit the revised scaling law
-    print("\nFitting revised data-constrained scaling law...")
-    params = fit_scaling_law(tokens, model_size, unique_tokens, loss)
-    A, alpha, beta, C, gamma, E = params
-    
-    print("\nRevised Scaling Law Parameters:")
-    print("=" * 50)
-    print(f"A     (scale factor)           : {A:.4f}")
-    print(f"α     (token exponent)         : {alpha:.4f}")
-    print(f"β     (model size exponent)    : {beta:.4f}")
-    print(f"C     (constraint coeff)       : {C:.4f}")
-    print(f"γ     (constraint exponent)    : {gamma:.4f}")
-    print(f"E     (irreducible loss floor) : {E:.4f}")
-    
-    # Evaluate fit
-    pred = scaling_law_func(tokens, model_size, unique_tokens, params)
-    mse = np.mean((pred - loss) ** 2)
-    rmse = np.sqrt(mse)
-    r2 = 1 - np.sum((pred - loss)**2) / np.sum((loss - np.mean(loss))**2)
-    
-    print("\nFit Quality:")
-    print("=" * 30)
-    print(f"R² score: {r2:.4f}")
-    print(f"MSE     : {mse:.6f}")
-    print(f"RMSE    : {rmse:.4f}")

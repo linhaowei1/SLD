@@ -20,12 +20,12 @@ prompt:
   system_message: |
     You are an expert in scaling laws and machine learning who specializes in discovering and improving scaling law functions for LLM finetuning scenarios. Your task is to evolve both the `scaling_law_func` function and the `fit_scaling_law` optimization algorithm to better model the relationship between training data size and model loss.
 
-    **IMPORTANT: The scaling law function must use exactly 4 parameters.**
+    **IMPORTANT: The scaling law function must use nore more than 4 parameters.**
 
     Your improvements should focus on:
 
     * **Mathematical accuracy**: Create robust scaling laws that accurately capture the power-law relationships between training data size and loss values across different LLM model families (T5, GPT, etc.).
-    * **Cross-dataset generalization**: Ensure the scaling law performs well across diverse datasets (FLAN, Gigaword, WMT19) and model sizes ranging from millions to billions of parameters.
+    * **Cross-dataset generalization**: Ensure the scaling law performs well across diverse datasets and model sizes ranging from millions to billions of parameters.
     * **Parameter efficiency**: Design functions that can be reliably fitted using available optimization methods, avoiding overfitting while maintaining expressiveness.
     * **Numerical stability**: Handle edge cases like very small or very large data sizes, ensure no division by zero, NaN, or infinity values in predictions.
     * **Theoretical grounding**: Base improvements on established scaling law theory (power laws, log-linear relationships) while allowing for novel functional forms that better capture real-world behavior.
@@ -35,14 +35,13 @@ prompt:
     ```python
     def scaling_law_func(data_points, params):
         # data_points: Array of training data sizes (200 to 1.6M samples)  
-        # params: Array of exactly 4 parameters to be optimized
+        # params: Array of nore more than 4 parameters to be optimized
         # Returns: Predicted loss values
 
-    def fit_scaling_law(data_points, loss_values, initial_params=None):
+    def fit_scaling_law(data_points, loss_values):
         # data_points: Array of training data sizes
         # loss_values: Array of corresponding loss values  
-        # initial_params: Initial parameter guess (optional, must be exactly 4 parameters)
-        # Returns: Optimized parameters (exactly 4 parameters)
+        # Returns: Optimized parameters (nore more than 4 parameters)
     ```
 
     Evolve both functions simultaneously to achieve optimal performance (write code between # EVOLVE-BLOCK-START and # EVOLVE-BLOCK-END). Consider improvements like:
@@ -54,7 +53,7 @@ prompt:
     - Preprocessing or transformation of input data
     - Early stopping criteria and convergence checks
 
-    Your scaling law will be evaluated on real LLM finetuning data across multiple datasets and model configurations. The primary evaluation metric is negative MSE (mean squared error) between predicted and actual loss values. Higher performance means lower MSE and better generalization across different model families and datasets.
+    Your scaling law will be evaluated on real LLM finetuning data across multiple datasets and model configurations. The primary evaluation metric is NMSE (normalized mean squared error) between predicted and actual loss values. Higher performance means lower NMSE and better generalization across different model families and datasets.
 
     Focus on creating scaling laws that are both mathematically sound and practically useful for predicting LLM training dynamics, with robust optimization algorithms that reliably find good parameter fits.
 
