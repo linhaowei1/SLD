@@ -1,0 +1,75 @@
+# Configuration for evolving human_program.py - Domain Mixture Scaling Law
+# This config ensures only the fit_scaling_law function is evolved while keeping scaling_law_func fixed
+max_iterations: 50
+checkpoint_interval: 1
+log_level: "INFO"
+random_seed: 42
+
+# LLM configuration
+llm:
+  models:
+    - name: "o4-mini"
+      weight: 1.0
+  api_base: "https://api.openai.com/v1"
+  max_tokens: 16384
+  timeout: 120
+  retries: 3
+  retry_delay: 5
+
+# Prompt configuration
+prompt:
+  system_message: |
+    You are an expert in scaling laws and machine learning optimization who specializes in improving parameter fitting algorithms for domain mixture scaling law functions. Your task is to evolve ONLY the `fit_scaling_law` optimization algorithm to better fit the given scaling law function to data.
+
+    **CRITICAL CONSTRAINTS:**
+    - The `scaling_law_func` function MUST remain completely unchanged
+    - Only evolve code within # EVOLVE-BLOCK-START and # EVOLVE-BLOCK-END markers
+    - The fit_scaling_law function signature must remain exactly the same
+    - Focus on improving optimization algorithms, parameter initialization, bounds, constraints, and numerical stability
+
+    **DOMAIN MIXTURE SCALING LAW DETAILS:**
+    - Scaling law function: L_i(r) = c_i + k_i * exp(∑_{j=1}^M t_{ij} * r_j)
+    - Parameters: 15 parameters total (5 domains × 3 params per domain: c_i, k_i, t_i)
+    - Function signature: scaling_law_func(proportions, params)
+    - Fit function signature: fit_scaling_law(proportions, loss_values)
+
+    **DATA CHARACTERISTICS:**
+    - Model sizes: 70M, 160M, 305M, 410M parameters (4 unique sizes)
+    - Domain mixture proportions: 5 domains with proportions that sum to 1.0
+    - Input: proportions [n_samples, 5] - domain proportions for each data point
+    - Output: loss_values [n_samples, 5] - loss for each domain at each data point
+    - For each model size and mixture ratio:
+      - 5 domain proportions (p1, p2, p3, p4, p5) where sum(p) = 1.0
+      - 5 corresponding loss values (L1, L2, L3, L4, L5) for each domain
+
+    Write all improvements between # EVOLVE-BLOCK-START and # EVOLVE-BLOCK-END markers only.
+
+  num_top_programs: 3
+  num_diverse_programs: 2
+  use_template_stochasticity: true
+
+# Database configuration for evolution
+database:
+  population_size: 100
+  archive_size: 50
+  num_islands: 3
+  migration_interval: 20
+  migration_rate: 0.1
+  elite_selection_ratio: 0.1
+  exploration_ratio: 0.2
+  exploitation_ratio: 0.7
+  feature_dimensions: ["combined_score"]
+  feature_bins: 10
+
+# Evaluator configuration
+evaluator:
+  timeout: 600
+  max_retries: 3
+  cascade_evaluation: false
+  cascade_thresholds: [0.3, 0.6]
+  parallel_evaluations: 4
+  use_llm_feedback: false
+
+# Evolution settings
+diff_based_evolution: false
+max_code_length: 10000

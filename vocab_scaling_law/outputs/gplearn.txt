@@ -1,0 +1,34 @@
+# Step 1: Fitting scaling law on ALL TRAINING data
+    |   Population Average    |             Best Individual              |
+---- ------------------------- ------------------------------------------ ----------
+ Gen   Length          Fitness   Length          Fitness      OOB Fitness  Time Left
+   0    16.00          98.0291        5          0.49491              N/A     12.29s
+   1    15.18          31.8306        7         0.395294              N/A      9.24s
+   2    14.82          13.9851       51         0.470786              N/A     12.00s
+   3    10.38          8.88827       14         0.473014              N/A     11.12s
+   4     3.47          5.57468       14         0.473014              N/A     12.63s
+   5     4.75           5.8023       14         0.473014              N/A     11.04s
+   6     8.28          4.48422       20         0.437252              N/A      9.17s
+   7    10.35          7.61313       18         0.437252              N/A      9.43s
+   8    10.76          4.98531       18         0.437252              N/A      8.13s
+   9    12.65          4.74598       22         0.436887              N/A      9.38s
+  10    17.78          4.65333       26         0.436887              N/A      7.28s
+  11    17.54           4.6233       25         0.436887              N/A      6.39s
+  12    17.08          4.36168       30         0.436887              N/A      6.55s
+  13    16.42           4.0128       19         0.436296              N/A      4.84s
+  14    15.68          3.73897       22         0.436887              N/A      4.61s
+  15    15.36          3.90101       29         0.436887              N/A      3.32s
+  16    14.92          4.79698       15         0.437252              N/A      2.48s
+  17    15.16          3.98489       15         0.437252              N/A      1.88s
+  18    15.05          4.05203       15         0.437252              N/A      0.81s
+  19    14.77          4.15889       15         0.437252              N/A      0.00s
+Successfully fitted scaling law parameters
+
+# Fitted Equation:
+GPlearn equation: max(sub(neg(inv(sqrt(log_model_size))), sqrt(log_model_size)), add(sub(abs(log_vocab_size), log_model_size), log(log_model_size)))
+# Step 2: Evaluating fitted law on ALL TEST data
+mse: 29.640301283169524
+r2: -45.146114451151696
+mae: 5.384977915902736
+nmse: 46.146114451151696
+combined_score: 0.02121065567420417

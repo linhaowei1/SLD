@@ -1,163 +1,168 @@
 # SLD - Scaling Law Discovery
 
-基于AI的缩放律发现框架，使用OpenEvolve进化式编程来自动发现和优化LLM微调的缩放律函数。
+An AI-powered scaling law discovery framework that uses OpenEvolve evolutionary programming to automatically discover and optimize scaling law functions for LLM fine-tuning.
 
-## 📋 项目概述
+## 📋 Project Overview
 
-这个项目结合了两个核心组件：
-- **rectified_scaling_law**: 缩放律发现的主要实现，包含初始程序、评估器和配置
-- **openevolve**: 强大的进化式编程框架，用于自动优化和发现算法
+This project combines two core components:
+- **Scaling Law Discovery Modules**: Multiple scaling law implementations including data-constrained, rectified, vocabulary, domain mixture, and mixture-of-experts scaling laws
+- **OpenEvolve**: A powerful evolutionary programming framework for automated algorithm optimization and discovery
 
-通过OpenEvolve的进化算法，项目可以自动发现更准确的缩放律函数，用于预测LLM在不同训练数据规模下的性能表现。
+Through OpenEvolve's evolutionary algorithms, the project can automatically discover more accurate scaling law functions to predict LLM performance across different training data scales and configurations.
 
-## 🎯 主要功能
+## 🎯 Key Features
 
-- **自动缩放律发现**: 使用进化算法自动优化缩放律函数的数学形式和参数
-- **多数据集评估**: 在FLAN、Gigaword、WMT19等真实LLM微调数据集上验证性能
-- **鲁棒性优化**: 确保发现的缩放律在不同模型家族（T5、GPT等）和数据规模上都有良好表现
-- **实时监控**: 支持检查点保存、可视化进化过程和性能追踪
+- **Automated Scaling Law Discovery**: Uses evolutionary algorithms to automatically optimize scaling law function forms and parameters
+- **Multi-Dataset Evaluation**: Validates performance on real LLM fine-tuning datasets including FLAN, Gigaword, and WMT19
+- **Robustness Optimization**: Ensures discovered scaling laws perform well across different model families (T5, GPT, etc.) and data scales
+- **Real-time Monitoring**: Supports checkpoint saving, evolution process visualization, and performance tracking
 
-## 🏗️ 项目结构
+## 🏗️ Project Structure
 
 ```
 SLD/
-├── README.md                    # 项目说明文档
-├── rectified_scaling_law/       # 主要项目代码
-│   ├── config.yaml             # OpenEvolve配置文件
-│   ├── evaluator.py            # 缩放律性能评估器
-│   ├── init_program.py         # 初始缩放律实现
-│   ├── data/                   # 真实LLM微调数据集
-│   │   ├── flan.csv           # FLAN数据集的训练曲线
-│   │   ├── gigaword.csv       # Gigaword数据集的训练曲线
-│   │   └── wmt19.csv          # WMT19数据集的训练曲线
-│   └── openevolve_output/      # OpenEvolve输出结果（运行后生成）
-└── openevolve/                 # OpenEvolve进化式编程框架
-    ├── openevolve/             # 核心框架代码
-    ├── examples/               # 使用示例
-    ├── configs/                # 配置模板
+├── README.md                        # Project documentation
+├── data_loader.py                   # Common data loading utilities
+├── rectified_scaling_law/           # Rectified scaling law implementation
+│   ├── config.yaml                 # OpenEvolve configuration
+│   ├── evaluator.py                # Scaling law performance evaluator
+│   ├── init_program.py             # Initial scaling law implementation
+│   └── data/                       # Real LLM fine-tuning datasets
+│       ├── flan.csv               # FLAN dataset training curves
+│       ├── gigaword.csv           # Gigaword dataset training curves
+│       └── wikiword.csv           # WikiWord dataset training curves
+├── data_constrained_scaling_law/   # Data-constrained scaling law
+├── vocab_scaling_law/              # Vocabulary scaling law
+├── domain_mixture_scaling_law/     # Domain mixture scaling law
+├── moe_scaling_law/                # Mixture-of-experts scaling law
+└── openevolve/                     # OpenEvolve evolutionary programming framework
+    ├── openevolve/                 # Core framework code
+    ├── examples/                   # Usage examples
+    ├── configs/                    # Configuration templates
     └── ...
 ```
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 环境准备
+### Environment Setup
 
-1. **安装OpenEvolve**:
+1. **Install OpenEvolve**:
 ```bash
 cd openevolve
 pip install -e .
 ```
 
-2. **配置API密钥**:
+2. **Configure API Key**:
 ```bash
 export OPENAI_API_KEY=your-api-key-here
 ```
-支持所有OpenAI兼容的API端点（OpenAI、Anthropic、本地模型等）
+Supports all OpenAI-compatible API endpoints (OpenAI, Anthropic, local models, etc.)
 
-### 运行缩放律发现
+### Running Scaling Law Discovery
 
-1. **进入项目目录**:
+1. **Navigate to a scaling law directory**:
 ```bash
 cd rectified_scaling_law
+# Or try other variants:
+# cd data_constrained_scaling_law
+# cd vocab_scaling_law
+# cd domain_mixture_scaling_law
+# cd moe_scaling_law
 ```
 
-2. **启动进化过程**:
+2. **Start the evolutionary process**:
 ```bash
 python ../openevolve/openevolve-run.py init_program.py evaluator.py --config config.yaml --iterations 100
 ```
 
-3. **监控进度**:
+3. **Monitor progress**:
 ```bash
-# 查看生成的结果
+# View generated results
 ls openevolve_output/
 
-# 查看最佳程序
-cat openevolve_output/best_program.py
+# View best program
+cat openevolve_output/best/best_program.py
 ```
-## 📊 数据集说明
+## 📊 Dataset Information
 
-项目使用三个真实的LLM微调数据集：
+The project uses multiple real LLM fine-tuning datasets:
 
-- **FLAN**: 指令微调数据集，包含多种NLP任务
-- **Gigaword**: 文本摘要数据集
-- **WMT19**: 机器翻译数据集
+- **FLAN**: Instruction fine-tuning dataset containing various NLP tasks
+- **Gigaword**: Text summarization dataset
+- **WikiWord**: Wikipedia-based language modeling dataset
 
-每个数据集包含不同模型大小和训练数据规模下的loss值，用于验证缩放律的准确性。
+Each dataset contains loss values across different model sizes and training data scales for validating scaling law accuracy.
 
-数据格式:
-- 训练数据规模：200 到 1,638,400 个样本
-- 模型参数：从数百万到数十亿参数
-- 模型家族：T5、GPT等主流架构
+Data format:
+- Training data scale: 200 to 1,638,400 samples  
+- Model parameters: From millions to billions of parameters
+- Model families: T5, GPT, and other mainstream architectures
 
-## ⚙️ 配置详解
+## ⚙️ Configuration Details
 
-### 主要配置参数
+### Key Configuration Parameters
 
 ```yaml
-# 进化参数
-max_iterations: 50              # 最大进化迭代次数
-random_seed: 42                 # 随机种子，确保可重复性
+# Evolution parameters  
+max_iterations: 50              # Maximum evolution iterations
+random_seed: 42                 # Random seed for reproducibility
 
-# LLM配置
+# LLM configuration
 llm:
   models:
-    - name: "o4-mini"          # 使用的语言模型
-      weight: 1.0              # 模型权重
-  max_tokens: 16384            # 最大token数
+    - name: "o4-mini"          # Language model to use
+      weight: 1.0              # Model weight
+  max_tokens: 16384            # Maximum token count
   
-# 进化算法配置
+# Evolution algorithm configuration
 database:
-  population_size: 100         # 种群大小
-  archive_size: 50            # 存档大小
-  num_islands: 3              # 岛屿数量（并行进化）
+  population_size: 100         # Population size
+  archive_size: 50            # Archive size
+  num_islands: 3              # Number of islands (parallel evolution)
   
-# 评估配置
+# Evaluation configuration  
 evaluator:
-  timeout: 30                 # 评估超时时间
-  parallel_evaluations: 4     # 并行评估数量
+  timeout: 30                 # Evaluation timeout
+  parallel_evaluations: 4     # Number of parallel evaluations
 ```
 
-## 🔬 评估指标
+## 🔬 Evaluation Metrics
 
-项目使用以下指标评估缩放律的性能：
+The project uses the following metrics to evaluate scaling law performance:
 
-- **MSE (均方误差)**: 主要评估指标，越小越好
-- **R²分数**: 拟合质量评估
-- **皮尔逊相关系数**: 预测与真实值的相关性
-- **交叉数据集泛化**: 在不同数据集间的性能一致性
+- **MSE (Mean Squared Error)**: Primary evaluation metric, lower is better
+- **R² Score**: Fit quality assessment  
+- **Pearson Correlation**: Correlation between predictions and true values
+- **Cross-dataset Generalization**: Performance consistency across different datasets
 
-## 📈 初始缩放律
+## 📈 Initial Scaling Laws
 
-项目从一个基础的幂律函数开始：
+The project starts with basic power law functions:
 
 ```python
 def scaling_law_func(data_points, params):
     """
-    初始的幂律缩放函数: loss = (a * x^(-b) + c)^d
+    Initial power law scaling function: loss = (a / (x + offset)^b + c)^d
     """
-    a = abs(params[0]) + 0.1  # 尺度因子
-    b = abs(params[1]) + 1.0  # 幂指数
-    c = abs(params[2]) + 0.1  # 偏移量
-    d = abs(params[3]) + 0.1  # 输出变换
-    
-    loss = np.power(a * x_safe ** (-b) + c, d)
+    x = np.asarray(data_points, dtype=float)
+    loss = np.power(params[0] / np.power(x + 1e07, params[1]) + params[2], params[3])
     return loss
 ```
 
-OpenEvolve会自动优化这个函数的数学形式和参数拟合算法。
+OpenEvolve automatically optimizes the mathematical form and parameter fitting algorithms of these functions.
 
-## 📁 输出结果
+## 📁 Output Results
 
-运行完成后，`openevolve_output/`目录将包含：
+After completion, the `openevolve_output/` directory will contain:
 
-- `best_program.py`: 发现的最佳缩放律函数
-- `checkpoints/`: 各个迭代的检查点
-- `evolution_log.txt`: 详细的进化日志
-- `performance_metrics.json`: 性能指标历史
+- `best/best_program.py`: The discovered best scaling law function
+- `checkpoints/`: Checkpoints from each iteration
+- `logs/`: Detailed evolution logs
+- Various metadata and performance tracking files
 
-## 🔧 高级使用
+## 🔧 Advanced Usage
 
-### 从检查点恢复
+### Resume from Checkpoint
 
 ```bash
 python ../openevolve/openevolve-run.py init_program.py evaluator.py \
@@ -166,36 +171,36 @@ python ../openevolve/openevolve-run.py init_program.py evaluator.py \
   --iterations 50
 ```
 
-### 自定义评估器
+### Custom Evaluators
 
-可以修改`evaluator.py`来：
-- 添加新的数据集
-- 引入额外的评估指标
-- 调整评估权重
+You can modify `evaluator.py` to:
+- Add new datasets
+- Introduce additional evaluation metrics
+- Adjust evaluation weights
 
-### 配置优化
+### Configuration Optimization
 
-根据计算资源调整配置：
-- 增加`population_size`以获得更好的结果
-- 调整`parallel_evaluations`匹配CPU核心数
-- 设置合适的`timeout`避免卡住
+Adjust configuration based on computational resources:
+- Increase `population_size` for better results
+- Adjust `parallel_evaluations` to match CPU cores
+- Set appropriate `timeout` to avoid hanging
 
-## 🤝 贡献指南
+## 🤝 Contributing
 
-欢迎贡献代码和想法：
+We welcome contributions and ideas:
 
-1. Fork 项目
-2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 打开 Pull Request
+1. Fork the project
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## 📝 许可证
+## 📝 License
 
-本项目使用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 致谢
+## 🙏 Acknowledgments
 
-- [OpenEvolve](https://github.com/codelion/openevolve) - 强大的进化式编程框架
-- 真实LLM数据集的提供者们
-- 开源社区的支持和贡献
+- [OpenEvolve](https://github.com/codelion/openevolve) - Powerful evolutionary programming framework
+- Contributors of real LLM datasets
+- Open source community support and contributions

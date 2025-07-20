@@ -263,6 +263,27 @@ if __name__ == "__main__":
     fitted_params = train_result["fitted_params"]
     print(f"Successfully fitted MoE scaling law parameters")
     
+    # Extract and display the fitted equation
+    if fitted_params and 'model' in fitted_params:
+        model = fitted_params['model']
+        print(f"\n# Fitted Equation:")
+        try:
+            if hasattr(model, '_program'):  # GPlearn model
+                print(f"GPlearn equation: {model._program}")
+            elif hasattr(model, 'equations_'):  # PySR model
+                if hasattr(model.equations_, 'iloc') and len(model.equations_) > 0:
+                    best_eq = model.equations_.iloc[-1]
+                    print(f"PySR equation: {best_eq['equation']}")
+                    print(f"Complexity: {best_eq['complexity']}")
+                    print(f"Loss: {best_eq['loss']}")
+            elif hasattr(model, 'coef_'):  # Linear regression fallback
+                print(f"Linear model coefficients: {model.coef_}")
+                print(f"Linear model intercept: {model.intercept_}")
+            else:
+                print("Could not extract equation from model")
+        except Exception as e:
+            print(f"Error extracting equation: {e}")
+    
     # Step 2: Use test data with fitted parameters for evaluation
     print("# Step 2: Evaluating fitted law on ALL TEST data")
     test_result = evaluate(program_path, use_test_data=True, fitted_params=fitted_params)

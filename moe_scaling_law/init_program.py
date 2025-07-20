@@ -26,10 +26,7 @@ def scaling_law_func(num_experts, total_parameter_count, params):
     """
     
     # Simple MoE scaling law with expert and parameter scaling
-    loss = (params[0] + 
-            params[1] / np.power(num_experts + 1e-6, params[2]) + 
-            params[3] / np.power(total_parameter_count + 1e6, params[4]) +
-            params[5] / (num_experts * total_parameter_count + 1e6))
+    loss =  params[0] + params[1] / np.power(num_experts + 1e-6, params[2]) + params[3] / np.power(total_parameter_count + 1e6, params[4])
     
     return loss
 
@@ -45,7 +42,7 @@ def fit_scaling_law(num_experts, total_parameter_count, loss_values):
     Returns:
         Optimized parameters (up to 6 parameters)
     """
-    initial_params = np.ones(6)
+    initial_params = np.ones(5)
     
     def objective(params):
         try:
@@ -57,13 +54,12 @@ def fit_scaling_law(num_experts, total_parameter_count, loss_values):
     
     result = minimize(objective, initial_params, method='BFGS')
     
-    # Ensure result has exactly 6 parameters
     final_params = result.x if result.success else initial_params
     
     return final_params
 
 
 # Set the number of parameters this function expects
-scaling_law_func.num_params = 6
+scaling_law_func.num_params = 5
 
 # EVOLVE-BLOCK-END
