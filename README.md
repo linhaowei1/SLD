@@ -1,6 +1,6 @@
 # Automated Scaling Law Discovery
 
-EvoSLD is a framework for the automated discovery of scaling laws using Large Language Models (LLMs). It implements a novel evolutionary approach that co-evolves both the symbolic scaling law expression and its corresponding optimization algorithm. This method has been shown to rediscover, and in many cases surpass, human-designed scaling laws across a variety of complex domains.
+[EvoSLD](https://github.com/linhaowei1/SLD/tree/main/assets/EvoSLD.pdf) is a framework for the automated discovery of scaling laws using Large Language Models (LLMs). It implements a novel evolutionary approach that co-evolves both the symbolic scaling law expression and its corresponding optimization algorithm. This method has been shown to rediscover, and in many cases surpass, human-designed scaling laws across a variety of complex domains.
 
 ![Comparison of MoE scaling laws discovered by different methods](./assets/figure2.png) 
 
