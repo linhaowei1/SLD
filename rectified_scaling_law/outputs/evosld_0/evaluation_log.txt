@@ -1,0 +1,18 @@
+--- Running Evaluation for Task: rectified_scaling_law ---
+
+# Step 1: Fitting scaling law on TRAINING data...
+Successfully fitted parameters for 42 control group(s).
+
+# Step 2: Evaluating fitted law on TEST data...
+
+--- Final Test Results ---
+  Normalized MSE (NMSE): 0.006230
+  Normalized MAE (NMAE): 0.070884
+  R-squared (R2):        0.993770
+  Combined Score:        0.993808
+--------------------------
+=== Evaluation Results Summary ===
+Task: rectified_scaling_law
+Run number: 1
+Evaluation time: Sat Jul 26 01:29:12 PM CST 2025
+==================

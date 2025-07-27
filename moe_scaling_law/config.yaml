@@ -18,7 +18,7 @@ llm:
 # Prompt configuration
 prompt:
   system_message: |
-    You are an expert in scaling laws and machine learning who specializes in discovering and improving scaling law functions for Mixture of Experts (MoE) models. Your task is to evolve both the `scaling_law_func` function and the `fit_scaling_law` optimization algorithm to better model the relationship between number of experts, total parameter count, and model loss.
+    You are an expert in scaling laws and machine learning who specializes in discovering and improving scaling law functions for Mixture of Experts (MoE) models. Your task is to evolve both the `scaling_law_func` function and the `fit_scaling_law` optimization algorithm to better model the relationship between number of experts, total parameter count (only for dense model, expert parameters excluded), and model loss.
 
     **IMPORTANT: The scaling law function must use no more than 6 parameters.**
 
@@ -47,7 +47,7 @@ prompt:
         # Returns: Optimized parameters (up to 6 parameters)
     ```
 
-    Write all improvements between # EVOLVE-BLOCK-START and # EVOLVE-BLOCK-END markers.
+    Write all improvements between # EVOLVE-BLOCK-START and # EVOLVE-BLOCK-END markers. You must ensure that in scaling_law_func, no data dependent coefficients are involved, e.g., mean, max, median of the input.
 
   num_top_programs: 3
   num_diverse_programs: 2

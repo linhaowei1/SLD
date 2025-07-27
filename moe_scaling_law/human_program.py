@@ -13,7 +13,7 @@ def scaling_law_func(num_experts, total_parameter_count, params):
     Human-designed MoE scaling law function.
     
     log L(N,E) = a*log N + b*log Ê + c*log N * log Ê + d
-    where 1/Ê = 1/(E-1+(1/E_start - 1/E_max)) + 1/E_max
+    where 1/Ê = 1/(E-1+(1/E_start - 1/E_max)^{-1}) + 1/E_max
     
     Simplified version using 6 parameters: [a, b, c, d, E_start, E_max]
     
@@ -36,7 +36,7 @@ def scaling_law_func(num_experts, total_parameter_count, params):
     E_start = max(E_start, 1.1)  # Ensure E_start > 1
     E_max = max(E_max, E_start + 1)  # Ensure E_max > E_start
     
-    denominator = E - 1 + (1/E_start - 1/E_max)
+    denominator = E - 1 + 1/(1/E_start - 1/E_max)
     denominator = np.maximum(denominator, 1e-8)  # Avoid division by zero
     
     one_over_E_hat = 1.0 / denominator + 1.0 / E_max

@@ -1,0 +1,69 @@
+# Configuration for evolving human_program.py - Data Constrained Scaling Law
+# This config ensures only the fit_scaling_law function is evolved while keeping scaling_law_func fixed
+max_iterations: 50
+checkpoint_interval: 1
+log_level: "INFO"
+random_seed: 42
+
+# LLM configuration
+llm:
+  models:
+    - name: "o4-mini"
+      weight: 1.0
+  api_base: "https://api.openai.com/v1"
+  max_tokens: 16384
+  timeout: 120
+  retries: 3
+  retry_delay: 5
+
+# Prompt configuration
+prompt:
+  system_message: |
+    You are an expert in scaling laws and machine learning optimization who specializes in improving parameter fitting algorithms for data-constrained scaling law functions. Your task is to evolve ONLY the `scaling_law_func` optimization algorithm to better fit the given scaling law function to data.
+
+    **CRITICAL CONSTRAINTS:**
+    - The `fit_scaling_law` function MUST remain completely unchanged except for the number of parameter used. It must be BFGS with np.ones(len(params)) initialization.
+    - The scaling_law_func function signature must remain exactly the same
+
+    **DATA CONSTRAINED SCALING LAW DETAILS:**
+    - Scaling law function: L(N,D,U) = E + A/((U_N + U_N*R_N*(1-exp(-(N/U_N-1)/R_N)))^α) + B/((U + U*R_D*(1-exp(-(D/U-1)/R_D)))^β)
+    - Parameters: 7 parameters [E, A, α, B, β, R_N, R_D]
+    - Function signature: scaling_law_func(tokens, model_size, unique_tokens, params)
+
+    **DATA CHARACTERISTICS (182 data points):**
+    - Model Parameters: 7.1M to 8.67B parameters (20 unique sizes)
+    - Unique Tokens Available: 100M to 900B tokens (33 unique values)  
+    - Training Tokens Used: 100M to 178B tokens (38 unique values)
+    - Loss Values: 2.34 to 8.10 (mean: 3.63, std: 1.03)
+    - Data Constraint Ratios (tokens/unique_tokens): 0.0001 to 1.0 (mean: 0.25)
+    - Model Distribution: 50 small (<100M), 78 medium (100M-1B), 54 large (>1B)
+
+  num_top_programs: 3
+  num_diverse_programs: 2
+  use_template_stochasticity: true
+
+# Database configuration for evolution
+database:
+  population_size: 100
+  archive_size: 50
+  num_islands: 3
+  migration_interval: 20
+  migration_rate: 0.1
+  elite_selection_ratio: 0.1
+  exploration_ratio: 0.2
+  exploitation_ratio: 0.7
+  feature_dimensions: ["combined_score"]
+  feature_bins: 10
+
+# Evaluator configuration
+evaluator:
+  timeout: 600
+  max_retries: 3
+  cascade_evaluation: false
+  cascade_thresholds: [0.3, 0.6]
+  parallel_evaluations: 4
+  use_llm_feedback: false
+
+# Evolution settings
+diff_based_evolution: false
+max_code_length: 10000

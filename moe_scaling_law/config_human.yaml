@@ -36,7 +36,7 @@ prompt:
 
     **DATA CHARACTERISTICS:**
     - Number of experts (E): Varying expert counts in MoE models
-    - Total parameter count (N): Model size including all expert parameters
+    - Total parameter count (N): Dense Model size excluding expert parameters
     - Loss values: Target losses to fit
     - The relationship models how loss scales with both model size and expert count
   

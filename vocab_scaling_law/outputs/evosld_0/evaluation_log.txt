@@ -1,0 +1,18 @@
+--- Running Evaluation for Task: vocab_scaling_law ---
+
+# Step 1: Fitting scaling law on TRAINING data...
+Successfully fitted parameters for 1 control group(s).
+
+# Step 2: Evaluating fitted law on TEST data...
+
+--- Final Test Results ---
+  Normalized MSE (NMSE): 0.023384
+  Normalized MAE (NMAE): 0.156750
+  R-squared (R2):        0.976616
+  Combined Score:        0.977151
+--------------------------
+=== Evaluation Results Summary ===
+Task: vocab_scaling_law
+Run number: 1
+Evaluation time: Sat Jul 26 01:13:47 PM CST 2025
+==================

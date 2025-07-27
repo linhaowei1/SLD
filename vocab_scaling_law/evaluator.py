@@ -180,7 +180,7 @@ def evaluate(program_path: str, use_test_data: bool = False, fitted_params: Dict
         start_time = time.time()
         fitted_params = run_with_timeout(
             fit_scaling_law,
-            args=(vocab_size, non_vocab_parameters, lossu_values),
+            args=(non_vocab_parameters, vocab_size, num_characters, lossu_values),
             timeout_seconds=600
         )
         fit_time = time.time() - start_time
@@ -192,14 +192,14 @@ def evaluate(program_path: str, use_test_data: bool = False, fitted_params: Dict
             # Need to fit first
             fitted_params = run_with_timeout(
                 fit_scaling_law,
-                args=(vocab_size, non_vocab_parameters, lossu_values),
+                args=(non_vocab_parameters, vocab_size, num_characters, lossu_values),
                 timeout_seconds=600
             )
         
         # Use parameters to predict and evaluate
         predicted_lossu = run_with_timeout(
             scaling_law_func,
-            args=(vocab_size, non_vocab_parameters, fitted_params),
+            args=(non_vocab_parameters, vocab_size, num_characters, fitted_params),
             timeout_seconds=600
         )
         
@@ -265,27 +265,6 @@ if __name__ == "__main__":
     
     fitted_params = train_result["fitted_params"]
     print(f"Successfully fitted scaling law parameters")
-    
-    # Extract and display the fitted equation
-    if fitted_params and 'model' in fitted_params:
-        model = fitted_params['model']
-        print(f"\n# Fitted Equation:")
-        try:
-            if hasattr(model, '_program'):  # GPlearn model
-                print(f"GPlearn equation: {model._program}")
-            elif hasattr(model, 'equations_'):  # PySR model
-                if hasattr(model.equations_, 'iloc') and len(model.equations_) > 0:
-                    best_eq = model.equations_.iloc[-1]
-                    print(f"PySR equation: {best_eq['equation']}")
-                    print(f"Complexity: {best_eq['complexity']}")
-                    print(f"Loss: {best_eq['loss']}")
-            elif hasattr(model, 'coef_'):  # Linear regression fallback
-                print(f"Linear model coefficients: {model.coef_}")
-                print(f"Linear model intercept: {model.intercept_}")
-            else:
-                print("Could not extract equation from model")
-        except Exception as e:
-            print(f"Error extracting equation: {e}")
     
     # Step 2: Use test data with fitted parameters for evaluation
     print("# Step 2: Evaluating fitted law on ALL TEST data")

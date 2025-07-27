@@ -1,0 +1,20 @@
+--- Running Evaluation for Task: moe_scaling_law ---
+
+# Step 1: Fitting scaling law on TRAINING data...
+Successfully fitted parameters for 1 control group(s).
+
+# Step 2: Evaluating fitted law on TEST data...
+
+--- Final Test Results ---
+  Normalized MSE (NMSE): 0.015235
+  Normalized MAE (NMAE): 0.121879
+  R-squared (R2):        0.984765
+  Combined Score:        0.984993
+    Fitter parmas: {'all_data': array([1.58599188e+00, 3.93047137e+01, 1.94334211e-01, 2.02026011e-02,
+       4.39992161e+00, 1.75268860e-02])}
+--------------------------
+=== Evaluation Results Summary ===
+Task: moe_scaling_law
+Run number: 3
+Evaluation time: Sat Jul 26 02:33:20 PM CST 2025
+==================

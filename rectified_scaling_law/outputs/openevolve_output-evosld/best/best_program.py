@@ -26,12 +26,10 @@ def fit_scaling_law(data_points, loss_values):
       2) Multi-start L-BFGS-B refinement on all 4 parameters.
     Objective: minimize normalized MSE (NMSE).
     """
+
     x = np.asarray(data_points, dtype=float)
     y = np.asarray(loss_values, dtype=float)
     n = len(x)
-    if n < 2:
-        # Not enough points: return trivial params
-        return np.array([1.0, 1.0, 0.0, 0.0], dtype=float)
 
     x_max = np.max(x)
     y_min, y_max = np.min(y), np.max(y)

@@ -221,7 +221,7 @@ def load_moe_scaling_law_data(data_dir: str, train: bool = True, random_seed: in
         data_point = {
             "loss_values": np.array([row['loss_validation']]),  # Single loss value per row
             "num_experts": np.array([row['num_experts']]),
-            "total_parameter_count": np.array([row['total_parameter_count']]),
+            "total_parameter_count": np.array([row['dense_parameter_count']]),
         }
         all_data_points.append(data_point)
     

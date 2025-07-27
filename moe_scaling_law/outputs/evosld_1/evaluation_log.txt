@@ -1,0 +1,24 @@
+/home/linhaowei/code/SLD/moe_scaling_law/outputs/evosld_1/best/best_program.py:102: RuntimeWarning: overflow encountered in square
+  return np.mean((pred - L) ** 2)
+/home/linhaowei/miniconda3/envs/alphaevolve/lib/python3.10/site-packages/scipy/optimize/_numdiff.py:596: RuntimeWarning: invalid value encountered in subtract
+  df = fun(x1) - f0
+--- Running Evaluation for Task: moe_scaling_law ---
+
+# Step 1: Fitting scaling law on TRAINING data...
+Successfully fitted parameters for 1 control group(s).
+
+# Step 2: Evaluating fitted law on TEST data...
+
+--- Final Test Results ---
+  Normalized MSE (NMSE): 0.017982
+  Normalized MAE (NMAE): 0.127491
+  R-squared (R2):        0.982018
+  Combined Score:        0.982335
+    Fitter parmas: {'all_data': array([ 3.60102023e+00, -1.95043027e-01,  2.97961590e-03, -1.12137122e-01,
+        6.53930147e-04,  4.31398553e-03])}
+--------------------------
+=== Evaluation Results Summary ===
+Task: moe_scaling_law
+Run number: 2
+Evaluation time: Sat Jul 26 02:33:19 PM CST 2025
+==================

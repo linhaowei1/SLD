@@ -1,206 +1,163 @@
-# SLD - Scaling Law Discovery
+# Automated Scaling Law Discovery
 
-An AI-powered scaling law discovery framework that uses OpenEvolve evolutionary programming to automatically discover and optimize scaling law functions for LLM fine-tuning.
+EvoSLD is a framework for the automated discovery of scaling laws using Large Language Models (LLMs). It implements a novel evolutionary approach that co-evolves both the symbolic scaling law expression and its corresponding optimization algorithm. This method has been shown to rediscover, and in many cases surpass, human-designed scaling laws across a variety of complex domains.
 
-## 📋 Project Overview
+![Comparison of MoE scaling laws discovered by different methods](./assets/figure2.png) 
 
-This project combines two core components:
-- **Scaling Law Discovery Modules**: Multiple scaling law implementations including data-constrained, rectified, vocabulary, domain mixture, and mixture-of-experts scaling laws
-- **OpenEvolve**: A powerful evolutionary programming framework for automated algorithm optimization and discovery
+**Fig 1. Comparison of MoE scaling laws.** EvoSLD (bottom row) discovers simpler and more accurate laws compared to traditional symbolic regression (PySR, top left), the human-designed law (top right), and an ablated version of itself without a co-evolving optimizer (top middle).
 
-Through OpenEvolve's evolutionary algorithms, the project can automatically discover more accurate scaling law functions to predict LLM performance across different training data scales and configurations.
+## ✨ Key Features
 
-## 🎯 Key Features
-
-- **Automated Scaling Law Discovery**: Uses evolutionary algorithms to automatically optimize scaling law function forms and parameters
-- **Multi-Dataset Evaluation**: Validates performance on real LLM fine-tuning datasets including FLAN, Gigaword, and WMT19
-- **Robustness Optimization**: Ensures discovered scaling laws perform well across different model families (T5, GPT, etc.) and data scales
-- **Real-time Monitoring**: Supports checkpoint saving, evolution process visualization, and performance tracking
-
-## 🏗️ Project Structure
-
-```
-SLD/
-├── README.md                        # Project documentation
-├── data_loader.py                   # Common data loading utilities
-├── rectified_scaling_law/           # Rectified scaling law implementation
-│   ├── config.yaml                 # OpenEvolve configuration
-│   ├── evaluator.py                # Scaling law performance evaluator
-│   ├── init_program.py             # Initial scaling law implementation
-│   └── data/                       # Real LLM fine-tuning datasets
-│       ├── flan.csv               # FLAN dataset training curves
-│       ├── gigaword.csv           # Gigaword dataset training curves
-│       └── wikiword.csv           # WikiWord dataset training curves
-├── data_constrained_scaling_law/   # Data-constrained scaling law
-├── vocab_scaling_law/              # Vocabulary scaling law
-├── domain_mixture_scaling_law/     # Domain mixture scaling law
-├── moe_scaling_law/                # Mixture-of-experts scaling law
-└── openevolve/                     # OpenEvolve evolutionary programming framework
-    ├── openevolve/                 # Core framework code
-    ├── examples/                   # Usage examples
-    ├── configs/                    # Configuration templates
-    └── ...
-```
+- **LLM-Powered Evolution**: Leverages the rich domain priors of LLMs to guide the evolutionary search for meaningful and physically plausible scaling laws.
+- **Co-evolution Framework**: Uniquely evolves both the symbolic function and a specialized fitting algorithm, leading to significantly more accurate parameterization.
+- **Superior Performance**: Outperforms traditional symbolic regression methods (like PySR, GPlearn) and has discovered laws that provide a better fit than human-derived formulas in complex scenarios.
+- **Broad Applicability**: Comes with pre-configured tasks for major scaling law research areas, including vocabulary size, fine-tuning, data mixtures, Mixture-of-Experts (MoE), and data-constrained settings.
+- **Extensible**: Easily add your own custom scaling law discovery tasks.
 
 ## 🚀 Quick Start
 
-### Environment Setup
+### Prerequisites
 
-1. **Install OpenEvolve**:
-```bash
-cd openevolve
-pip install -e .
+- Python 3.10+
+- An OpenAI API Key
+
+### Installation
+
+1. **Clone the repository:**
+
+   ```
+   git clone <repository-url>
+   cd SLD
+   ```
+
+2. **Install the OpenEvolve framework:**
+
+   This project is built on OpenEvolve. Install it from the local submodule.
+
+   ```
+   cd openevolve
+   pip install -e .
+   cd ..
+   ```
+
+3. **Set your API key:**
+
+   ```
+   export OPENAI_API_KEY="your_openai_api_key"
+   ```
+
+### Run All Tasks
+
+The simplest way to run all experiments is with the main script. This will execute 3 independent runs for each of the 5 scaling law tasks, evaluate the results, and generate reports.
+
+```
+bash run.sh
 ```
 
-2. **Configure API Key**:
-```bash
-export OPENAI_API_KEY=your-api-key-here
+## 🎯 Covered Scenarios
+
+EvoSLD has been validated on five diverse scaling law discovery tasks from recent literature. The goal is to find a single, universal symbolic expression (f) that accurately models the underlying behavior.
+
+| Scenario                  | Key Variables (Inputs)                                   | Human-Designed Law                                           |
+| ------------------------- | -------------------------------------------------------- | ------------------------------------------------------------ |
+| **Rectified Scaling Law** | Dataset Size, Model Size                                 | $L(D) = \frac{A}{D^\alpha + B} + C$                          |
+| **Vocabulary Scaling**    | Non-Vocab Params (N), Vocab Size (V), Dataset Size (D)   | $L(N, V, D) = \frac{A}{N^\alpha} + \frac{B}{V^\beta} + \frac{C}{D^\gamma} + E$ |
+| **Domain Mixture**        | Domain mixture ratios (mathbfr)                          | $L_i(\mathbf{r}) = c_i + k_i \exp\left(\sum_{j=1}^M t_{ij} r_j\right)$ |
+| **MoE Scaling**           | Dense Params (N), # of Experts (E)                       | $\log L(N, E) = a \log N + b \log \hat{E} + c \log N \log \hat{E} + d, \\where \frac{1}{\hat{E}} = \frac{1}{E - 1 + \left( \frac{1}{E_{\text{start}}} - \frac{1}{E_{\text{max}}} \right)^{-1}} + \frac{1}{E_{\text{max}}}$ |
+| **Data Constrained**      | Model Params (N), Training Tokens (D), Unique Tokens (U) | $L(N, D, U) = E + \frac{A}{D'^\alpha} + \frac{B}{N'^{\beta}}$ ($N', D'$ has complicated form)|
+
+In our experiments, EvoSLD successfully rediscovered the exact human-designed laws for the **Rectified** and **Vocabulary** scenarios and found *superior* laws for the **Domain Mixture** and **Data-Constrained** tasks.
+
+## 🛠️ Manual Usage
+
+You can also run and evaluate tasks individually.
+
+### Running a Single Task
+
+To run a specific task (e.g., `moe_scaling_law`), navigate to its directory and use the `openevolve-run` command:
+
 ```
-Supports all OpenAI-compatible API endpoints (OpenAI, Anthropic, local models, etc.)
-
-### Running Scaling Law Discovery
-
-1. **Navigate to a scaling law directory**:
-```bash
-cd rectified_scaling_law
-# Or try other variants:
-# cd data_constrained_scaling_law
-# cd vocab_scaling_law
-# cd domain_mixture_scaling_law
-# cd moe_scaling_law
-```
-
-2. **Start the evolutionary process**:
-```bash
-python ../openevolve/openevolve-run.py init_program.py evaluator.py --config config.yaml --iterations 100
-```
-
-3. **Monitor progress**:
-```bash
-# View generated results
-ls openevolve_output/
-
-# View best program
-cat openevolve_output/best/best_program.py
-```
-## 📊 Dataset Information
-
-The project uses multiple real LLM fine-tuning datasets:
-
-- **FLAN**: Instruction fine-tuning dataset containing various NLP tasks
-- **Gigaword**: Text summarization dataset
-- **WikiWord**: Wikipedia-based language modeling dataset
-
-Each dataset contains loss values across different model sizes and training data scales for validating scaling law accuracy.
-
-Data format:
-- Training data scale: 200 to 1,638,400 samples  
-- Model parameters: From millions to billions of parameters
-- Model families: T5, GPT, and other mainstream architectures
-
-## ⚙️ Configuration Details
-
-### Key Configuration Parameters
-
-```yaml
-# Evolution parameters  
-max_iterations: 50              # Maximum evolution iterations
-random_seed: 42                 # Random seed for reproducibility
-
-# LLM configuration
-llm:
-  models:
-    - name: "o4-mini"          # Language model to use
-      weight: 1.0              # Model weight
-  max_tokens: 16384            # Maximum token count
-  
-# Evolution algorithm configuration
-database:
-  population_size: 100         # Population size
-  archive_size: 50            # Archive size
-  num_islands: 3              # Number of islands (parallel evolution)
-  
-# Evaluation configuration  
-evaluator:
-  timeout: 30                 # Evaluation timeout
-  parallel_evaluations: 4     # Number of parallel evaluations
+cd moe_scaling_law/
+openevolve-run --config config.yaml init_program.py evaluator.py --output outputs/run_0
 ```
 
-## 🔬 Evaluation Metrics
+### Evaluating a Discovered Law
 
-The project uses the following metrics to evaluate scaling law performance:
+Use the global `evaluator.py` script to test a discovered program against the dataset.
 
-- **MSE (Mean Squared Error)**: Primary evaluation metric, lower is better
-- **R² Score**: Fit quality assessment  
-- **Pearson Correlation**: Correlation between predictions and true values
-- **Cross-dataset Generalization**: Performance consistency across different datasets
+```
+# The global evaluator is recommended
+python evaluator.py <task_name> <path_to_discovered_program>
 
-## 📈 Initial Scaling Laws
-
-The project starts with basic power law functions:
-
-```python
-def scaling_law_func(data_points, params):
-    """
-    Initial power law scaling function: loss = (a / (x + offset)^b + c)^d
-    """
-    x = np.asarray(data_points, dtype=float)
-    loss = np.power(params[0] / np.power(x + 1e07, params[1]) + params[2], params[3])
-    return loss
+# Example:
+python evaluator.py moe_scaling_law moe_scaling_law/outputs/run_0/best/best_program.py
 ```
 
-OpenEvolve automatically optimizes the mathematical form and parameter fitting algorithms of these functions.
+## 🔬 How It Works: The EvoSLD Method
 
-## 📁 Output Results
+Traditional symbolic regression (SR) methods like PySR and GPlearn often fail at these tasks. They perform an unguided search over a combinatorial space of mathematical operators, leading to overly complex and uninterpretable expressions that don't generalize.
 
-After completion, the `openevolve_output/` directory will contain:
+EvoSLD overcomes this with two key innovations:
 
-- `best/best_program.py`: The discovered best scaling law function
-- `checkpoints/`: Checkpoints from each iteration
-- `logs/`: Detailed evolution logs
-- Various metadata and performance tracking files
+1. **LLM-Guided Evolution**: It uses an LLM (e.g., GPT-4) as a "mutation operator." The LLM provides intelligent suggestions for modifying the current best scaling law, leveraging its vast knowledge of mathematical and physical patterns. This guides the search toward plausible and effective formulas.
+2. **Optimizer Co-evolution**: Finding a good symbolic formula is only half the battle. Fitting its coefficients to noisy, sparse experimental data is a hard optimization problem. Instead of relying on a fixed, general-purpose optimizer (like BFGS), **EvoSLD co-evolves a custom Python optimization function** alongside the symbolic law. This specialized fitter leads to a much more accurate evaluation of each candidate law, dramatically improving final performance.
 
-## 🔧 Advanced Usage
+## 💡 Adding Your Own Task
 
-### Resume from Checkpoint
+You can easily extend the framework to discover scaling laws for your own research problems.
 
-```bash
-python ../openevolve/openevolve-run.py init_program.py evaluator.py \
-  --config config.yaml \
-  --checkpoint openevolve_output/checkpoints/checkpoint_50 \
-  --iterations 50
+1. **Create Task Directory**:
+
+   ```
+   mkdir my_new_task && cd my_new_task
+   ```
+
+2. **Create `config.yaml`**: Copy a config from an existing task. The most important part is the `system_message`, which is the prompt that guides the LLM. Define your variables, data characteristics, and function signatures here.
+
+3. **Create `init_program.py`**: Provide a simple "seed" program. A basic power law is a good starting point. This file must contain the two functions to be evolved: `scaling_law_func` and `fit_scaling_law`.
+
+4. **Create `evaluator.py`**: Write a function to evaluate a given program. It should load your data, run the `fit_scaling_law` function to get the parameters, use `scaling_law_func` to get predictions, and return a dictionary of metrics (e.g., MSE, MAE).
+
+5. **Add Data**: Place your dataset in a `data/` subdirectory and register it in the global `./data_loader.py`.
+
+6. **Run**:
+
+   ```
+   openevolve-run --config config.yaml init_program.py evaluator.py --output outputs/test_run
+   ```
+
+## 📂 Project Structure
+
+```
+SLD/
+├── run.sh                  # Main automation script
+├── evaluator.py            # Global evaluator for all tasks
+├── data_loader.py          # Data loading utilities
+├── openevolve/             # Git submodule for the OpenEvolve framework
+├── assets/                 # Images and figures
+│   └── figure2.pdf
+├── data_constrained_scaling_law/
+├── domain_mixture_scaling_law/
+├── moe_scaling_law/
+├── rectified_scaling_law/
+└── vocab_scaling_law/
 ```
 
-### Custom Evaluators
+## 📜 Citation
 
-You can modify `evaluator.py` to:
-- Add new datasets
-- Introduce additional evaluation metrics
-- Adjust evaluation weights
+If you use EvoSLD in your research, please consider citing our paper:
 
-### Configuration Optimization
-
-Adjust configuration based on computational resources:
-- Increase `population_size` for better results
-- Adjust `parallel_evaluations` to match CPU cores
-- Set appropriate `timeout` to avoid hanging
-
-## 🤝 Contributing
-
-We welcome contributions and ideas:
-
-1. Fork the project
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+```
+@article{sld2025,
+  title={EvoSLD: Automated Neural Scaling Law Discovery With Large Language Models},
+  author={Lin, Haowei and Others},
+  journal={ArXiv},
+  year={2025}
+}
+```
 
 ## 🙏 Acknowledgments
 
-- [OpenEvolve](https://github.com/codelion/openevolve) - Powerful evolutionary programming framework
-- Contributors of real LLM datasets
-- Open source community support and contributions
+- The OpenEvolve framework development team.
+- The PySR and GPlearn communities for their pioneering work in symbolic regression.
+- All the researchers whose work on scaling laws provided the foundation and data for this project.

@@ -231,20 +231,16 @@ def evaluate(program_path: str, use_test_data: bool = False, fitted_params_dict:
             fitted_params = fitted_params_dict[model_size]
             
             # Aggregate proportions and loss values for this model size
-            # Each point has 5 proportions and 5 loss values, we need to flatten them properly
             proportions_list = []
             loss_values_list = []
             
             for point in points:
-                # Each point represents one training configuration
-                # Use the proportions as features and flatten loss values as targets
-                proportions_list.append(point["proportions"])  # Shape: (5,)
-                # Take the mean loss across the 5 domains for this configuration
-                loss_values_list.append(np.mean(point["loss_values"]))
+                proportions_list.append(point["proportions"])
+                loss_values_list.append(point["loss_values"])
             
-            # Stack into proper arrays
-            proportions = np.array(proportions_list)  # [n_points, 5]
-            loss_values = np.array(loss_values_list)  # [n_points]
+            # Stack into 2D arrays: [n_samples_for_this_model, 5]
+            proportions = np.array(proportions_list)
+            loss_values = np.array(loss_values_list)
             
             # Generate predictions using fitted parameters
             predicted_loss = run_with_timeout(
@@ -253,7 +249,7 @@ def evaluate(program_path: str, use_test_data: bool = False, fitted_params_dict:
                 timeout_seconds=600
             )
             
-            # Evaluate fit quality - both should be 1D arrays now
+            # Evaluate fit quality - flatten arrays for comparison
             predicted_flat = predicted_loss.flatten() if predicted_loss.ndim > 1 else predicted_loss
             true_flat = loss_values.flatten() if loss_values.ndim > 1 else loss_values
             
@@ -307,20 +303,16 @@ def evaluate(program_path: str, use_test_data: bool = False, fitted_params_dict:
         # Fit parameters for each model size
         for model_size, points in model_size_groups.items():
             # Aggregate proportions and loss values for this model size
-            # Each point has 5 proportions and 5 loss values, we need to flatten them properly
             proportions_list = []
             loss_values_list = []
             
             for point in points:
-                # Each point represents one training configuration
-                # Use the proportions as features and flatten loss values as targets
-                proportions_list.append(point["proportions"])  # Shape: (5,)
-                # Take the mean loss across the 5 domains for this configuration
-                loss_values_list.append(np.mean(point["loss_values"]))
+                proportions_list.append(point["proportions"])
+                loss_values_list.append(point["loss_values"])
             
-            # Stack into proper arrays
-            proportions = np.array(proportions_list)  # [n_points, 5]
-            loss_values = np.array(loss_values_list)  # [n_points]
+            # Stack into 2D arrays: [n_samples_for_this_model, 5]
+            proportions = np.array(proportions_list)
+            loss_values = np.array(loss_values_list)
             
             # Fit scaling law with timeout
             fitted_params = run_with_timeout(
@@ -370,30 +362,6 @@ if __name__ == "__main__":
     
     fitted_params_dict = train_result["fitted_params"]
     print(f"Successfully fitted parameters for {len(fitted_params_dict)} model sizes")
-    
-    # Extract and display the fitted equations
-    if fitted_params_dict:
-        print(f"\n# Fitted Equations:")
-        for model_size, fitted_params in fitted_params_dict.items():
-            if fitted_params and 'model' in fitted_params:
-                model_obj = fitted_params['model']
-                print(f"\nModel Size: {model_size}")
-                try:
-                    if hasattr(model_obj, '_program'):  # GPlearn model
-                        print(f"GPlearn equation: {model_obj._program}")
-                    elif hasattr(model_obj, 'equations_'):  # PySR model
-                        if hasattr(model_obj.equations_, 'iloc') and len(model_obj.equations_) > 0:
-                            best_eq = model_obj.equations_.iloc[-1]
-                            print(f"PySR equation: {best_eq['equation']}")
-                            print(f"Complexity: {best_eq['complexity']}")
-                            print(f"Loss: {best_eq['loss']}")
-                    elif hasattr(model_obj, 'coef_'):  # Linear regression fallback
-                        print(f"Linear model coefficients: {model_obj.coef_}")
-                        print(f"Linear model intercept: {model_obj.intercept_}")
-                    else:
-                        print("Could not extract equation from model")
-                except Exception as e:
-                    print(f"Error extracting equation: {e}")
     
     # Step 2: Use test data with fitted parameters for evaluation
     print("# Step 2: Evaluating fitted law on ALL TEST data")

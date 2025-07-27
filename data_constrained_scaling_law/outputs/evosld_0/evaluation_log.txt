@@ -1,0 +1,18 @@
+--- Running Evaluation for Task: data_constrained_scaling_law ---
+
+# Step 1: Fitting scaling law on TRAINING data...
+Successfully fitted parameters for 1 control group(s).
+
+# Step 2: Evaluating fitted law on TEST data...
+
+--- Final Test Results ---
+  Normalized MSE (NMSE): 0.172616
+  Normalized MAE (NMAE): 0.309716
+  R-squared (R2):        0.827384
+  Combined Score:        0.852794
+--------------------------
+=== Evaluation Results Summary ===
+Task: data_constrained_scaling_law
+Run number: 1
+Evaluation time: Sat Jul 26 01:14:51 PM CST 2025
+==================
