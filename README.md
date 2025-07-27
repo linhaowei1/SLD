@@ -60,13 +60,13 @@ EvoSLD has been validated on five diverse scaling law discovery tasks from recen
 
 | Scenario                  | Key Variables (Inputs)                                   | Human-Designed Law                                           |
 | ------------------------- | -------------------------------------------------------- | ------------------------------------------------------------ |
-| **Rectified Scaling Law** | Dataset Size, Model Size                                 | $L(D) = \frac{A}{D^\alpha + B} + C$                          |
+| **Rectified Scaling Law for SFT** | Dataset Size, Model Size                                 | $L(D) = \frac{A}{D^\alpha + B} + C$                          |
 | **Vocabulary Scaling**    | Non-Vocab Params (N), Vocab Size (V), Dataset Size (D)   | $L(N, V, D) = \frac{A}{N^\alpha} + \frac{B}{V^\beta} + \frac{C}{D^\gamma} + E$ |
-| **Domain Mixture**        | Domain mixture ratios (mathbfr)                          | $L_i(\mathbf{r}) = c_i + k_i \exp\left(\sum_{j=1}^M t_{ij} r_j\right)$ |
-| **MoE Scaling**           | Dense Params (N), # of Experts (E)                       | $\log L(N, E) = a \log N + b \log \hat{E} + c \log N \log \hat{E} + d, \\where \frac{1}{\hat{E}} = \frac{1}{E - 1 + \left( \frac{1}{E_{\text{start}}} - \frac{1}{E_{\text{max}}} \right)^{-1}} + \frac{1}{E_{\text{max}}}$ |
-| **Data Constrained**      | Model Params (N), Training Tokens (D), Unique Tokens (U) | $L(N, D, U) = E + \frac{A}{D'^\alpha} + \frac{B}{N'^{\beta}}$ ($N', D'$ has complicated form)|
+| **Domain Mixture**        | Domain mixture ratios ($\mathbf{r}$)                          | $L_i(\mathbf{r}) = c_i + k_i \exp\left(\sum_{j=1}^M t_{ij} r_j\right)$ |
+| **MoE Scaling**           | Dense Params (N), # of Experts (E)                       | $\log L(N, E) = a \log N + b \log \hat{E} + c \log N \log \hat{E} + d$ (${\hat{E}} has complicated form$)|
+| **Data Constrained**      | Model Params (N), Training Tokens (D), Unique Tokens (U) | $L(N, D, U) = E + \frac{A}{D'^\alpha} + \frac{B}{N'^{\beta}}$ ($N', D'$ have complicated forms)|
 
-In our experiments, EvoSLD successfully rediscovered the exact human-designed laws for the **Rectified** and **Vocabulary** scenarios and found *superior* laws for the **Domain Mixture** and **Data-Constrained** tasks.
+In our experiments, EvoSLD successfully rediscovered the exact human-designed laws for the **SFT** and **Vocabulary** scenarios and found *superior* laws for the **Domain Mixture** and **Data-Constrained** tasks.
 
 ## 🛠️ Manual Usage
 
