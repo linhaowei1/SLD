@@ -1,0 +1,13 @@
+[project]
+name = "evosld"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "matplotlib>=3.10.5",
+    "openevolve>=0.1.0",
+    "pandas>=2.3.1",
+    "scikit-learn>=1.7.1",
+    "scipy>=1.16.1",
+]

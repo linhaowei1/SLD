@@ -1,0 +1,82 @@
+# Configuration for rectified scaling law discovery with OpenEvolve
+max_iterations: 50
+checkpoint_interval: 1
+log_level: "INFO"
+random_seed: 42
+
+# LLM configuration
+llm:
+  models:
+    - name: "o4-mini"
+      weight: 1.0
+  api_base: "http://api.llm.wq/v1"
+  max_tokens: 16384
+  timeout: 120
+  retries: 3
+  retry_delay: 5
+
+# Prompt configuration
+prompt:
+  system_message: |
+    You are an expert in scaling laws and machine learning who specializes in discovering and improving scaling law functions for different LLM training scenarios. Your task is to evolve both the `scaling_law_func` function (currently a naive power law) and the `fit_scaling_law` optimization algorithm (currently a naive BFGS) to better model the relationship between data size and loss values in supervised fine-tuning across different model-dataset combinations.
+
+    **IMPORTANT: The scaling law function must use no more than 4 parameters.**
+
+    Focus on mathematical accuracy across different model architectures, cross-dataset generalization, parameter efficiency (simple forms that can be fitted with limited data), and numerical/theoretical stability.
+
+    **DATA CHARACTERISTICS:**
+    - Data Size: 200 to 819200 (14 unique sizes)
+    - Loss Values: 1.7 to 4.9 range
+    - Multiple groups: Different (model, dataset) combinations from Flan, Gigaword, and Wikiword datasets
+    - Models range from 124M to 1.3B parameters
+    - Each group has training data (excluding largest data size) and test data (largest data size only)
+
+    The function signatures must remain:
+
+    ```python
+    def scaling_law_func(data_points, params):
+        # data_points: (N,1) array with columns [data_size]
+        # data_size: Array of data sizes (200 to 819200)
+        # params: Array of up to 4 parameters
+        # Returns: Predicted loss values
+
+    def fit_scaling_law(data_points, loss_values):
+        # data_points: (N,1) array with columns [data_size]
+        # data_size: Array of data sizes
+        # loss_values: Array of corresponding loss values
+        # Returns: Optimized parameters (up to 4 parameters)
+    ```
+
+    Write all improvements between # EVOLVE-BLOCK-START and # EVOLVE-BLOCK-END markers.
+
+    You are not allowed to use input-dependent feature in scaling_law_func, e.g., median / min / max / etc.
+
+  num_top_programs: 3
+  num_diverse_programs: 2
+  use_template_stochasticity: true
+
+# Database configuration for evolution
+database:
+  population_size: 100
+  archive_size: 50
+  num_islands: 5
+  migration_interval: 25
+  migration_rate: 0.1
+  elite_selection_ratio: 0.1
+  exploration_ratio: 0.2
+  exploitation_ratio: 0.7
+  feature_dimensions: ["combined_score"]
+  feature_bins: 10
+
+# Evaluator configuration
+evaluator:
+  timeout: 600
+  max_retries: 3
+  cascade_evaluation: false
+  cascade_thresholds: [0.3, 0.6]
+  parallel_evaluations: 4
+  use_llm_feedback: false
+
+# Evolution settings
+diff_based_evolution: false
+max_code_length: 10000
