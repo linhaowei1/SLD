@@ -1,10 +1,47 @@
 # EvoSLD — Evolutionary Scaling Law Discovery
 
-*EvoSLD* uses evolutionary computation to **discover and optimize scaling laws** across machine‑learning scenarios. It’s built on top of the [OpenEvolve](https://github.com/codelion/openevolve) framework and evolves **both** the functional form of scaling laws **and** their fitting algorithms.
+**EvoSLD** uses evolutionary computation to **discover and optimize scaling laws** across machine‑learning scenarios. It sits on top of the [OpenEvolve](https://github.com/codelion/openevolve) framework and co‑evolves both the **functional form** of scaling laws **and** their **fitting algorithms**.
+
+> 📄 **Paper**: [EvoSLD: Automated Neural Scaling Law Discovery With Large Language Models](https://arxiv.org/abs/2507.21184)
 
 ---
 
-## Highlights
+## Table of Contents
+
+* [Why EvoSLD?](#why-evosld)
+* [Features](#features)
+* [What’s included (tasks)](#whats-included-tasks)
+* [Requirements](#requirements)
+* [Install](#install)
+
+  * [Using `uv` (recommended)](#using-uv-recommended)
+  * [Using plain `pip`](#using-plain-pip)
+* [Quick Start](#quick-start)
+* [Project Layout](#project-layout)
+* [Running Tasks](#running-tasks)
+* [Evaluating a Discovered Program](#evaluating-a-discovered-program)
+* [Add a New Scaling Law](#add-a-new-scaling-law)
+* [Configuration Guide](#configuration-guide)
+* [Data Interface](#data-interface)
+* [Tips for Search/Evolution](#tips-for-searchevolution)
+* [Troubleshooting](#troubleshooting)
+* [FAQ](#faq)
+* [Cite](#cite)
+* [Acknowledgments](#acknowledgments)
+
+---
+
+## Why EvoSLD?
+
+Scaling laws relate performance to factors like model size, dataset size, compute, learning rate, and architecture. Hand‑deriving such laws is time‑consuming and often brittle. **EvoSLD** automates this by:
+
+* **Searching** symbolic forms for scaling laws (closed‑form functions),
+* **Co‑designing** the corresponding **fitting/optimization routine**, and
+* **Selecting** candidates via evolutionary pressure on held‑out data.
+
+The result is a practical engine that can **rediscover** known laws and **propose better ones**—with explicit code you can inspect and re‑use.
+
+## Features
 
 * **End‑to‑end discovery**: Evolves closed‑form scaling functions *and* bespoke optimizers.
 * **Multiple domains** out of the box:
@@ -15,23 +52,34 @@
   * **Mixture of Experts (MoE)**: scaling behavior in MoE architectures
   * **Rectified (SFT)**: rectified scaling laws for supervised fine‑tuning
   * **Vocabulary**: impact of vocabulary size
-* **Constraint‑aware**: hard limit of **≤ 7 parameters** in discovered functions for tractable fitting.
-* **Robust evaluation**: timeouts, retries, cross‑validation hooks, and checkpointed evolution.
-* **Batchable & reproducible**: run many tasks and seeds; deterministic seeding throughout.
+* **Customizable**: All stages (prompting, evolution, evaluation, data) are configurable.
+* **Checkpoints & reproducibility**: Periodic snapshots + seeds.
 
----
+## What’s included (tasks)
+
+| Task key                       | Config file                                 | Data folder                          |
+| ------------------------------ | ------------------------------------------- | ------------------------------------ |
+| `data_constrained_scaling_law` | `configs/data_constrained_scaling_law.yaml` | `data/data_constrained_scaling_law/` |
+| `domain_mixture_scaling_law`   | `configs/domain_mixture_scaling_law.yaml`   | `data/domain_mixture_scaling_law/`   |
+| `lr_scaling_law`               | `configs/lr_scaling_law.yaml`               | `data/lr_scaling_law/`               |
+| `moe_scaling_law`              | `configs/moe_scaling_law.yaml`              | `data/moe_scaling_law/`              |
+| `rectified_scaling_law`        | `configs/rectified_scaling_law.yaml`        | `data/rectified_scaling_law/`        |
+| `vocab_scaling_law`            | `configs/vocab_scaling_law.yaml`            | `data/vocab_scaling_law/`            |
+
+> Add your own tasks in the same pattern; see [Add a New Scaling Law](#add-a-new-scaling-law).
 
 ## Requirements
 
 * **Python 3.13+**
-* **[uv](https://docs.astral.sh/uv/)** package & project manager
-* An **OpenAI‑compatible** API key (set `OPENAI_API_KEY`)
+* **[`uv`](https://docs.astral.sh/uv/)** package & project manager (recommended)
+* An **OpenAI‑compatible** API key (set `OPENAI_API_KEY`) and optionally `OPENAI_BASE_URL` if not using the default OpenAI endpoint
+* macOS/Linux/Windows
 
 > **Note**: `uv run` guarantees commands execute inside a synchronized project environment. If you prefer plain `pip`, you can adapt the commands accordingly.
 
----
+## Install
 
-## Quick Start (with `uv`)
+### Using `uv` (recommended)
 
 ```bash
 # 1) Clone
@@ -43,22 +91,49 @@ uv sync
 
 # 3) Provide LLM access (OpenAI‑compatible endpoint)
 export OPENAI_API_KEY=your_key
+# optional if you’re not using the default OpenAI endpoint
+# export OPENAI_BASE_URL=https://your.openai.compatible.endpoint/v1
+```
 
-# 4) Run a single discovery (example: Data‑Constrained)
+On Windows (PowerShell):
+
+```powershell
+$env:OPENAI_API_KEY="your_key"
+# $env:OPENAI_BASE_URL="https://your.openai.compatible.endpoint/v1"
+```
+
+### Using plain `pip`
+
+```bash
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -U pip
+pip install -r requirements.txt    # if provided; otherwise use pyproject
+
+export OPENAI_API_KEY=your_key
+# export OPENAI_BASE_URL=https://your.openai.compatible.endpoint/v1
+```
+
+## Quick Start
+
+Run a single discovery (example: **Data‑Constrained**):
+
+```bash
 EVAL_TASK_NAME="data_constrained_scaling_law" \
 uv run openevolve-run.py \
   --config configs/data_constrained_scaling_law.yaml \
   init_program.py evaluator.py \
   --output results/data_constrained_scaling_law/run_1
+```
 
-# 5) Run all tasks (batch execution)
+Run all tasks (batch execution):
+
+```bash
 # If your script is executable (shebang present), this works:
 uv run scripts/run.sh
 # or
 bash scripts/run.sh
 ```
-
----
 
 ## Project Layout
 
@@ -78,15 +153,13 @@ evosld/
 │  └─ ...
 ├─ data_loader.py               # Unified data loading interface
 ├─ evaluator.py                 # Unified evaluation system
-├─ init_program.py              # Initial scaling-law template
+├─ init_program.py              # Initial scaling‑law template
 ├─ results/                     # Outputs & checkpoints
 └─ scripts/
    └─ run.sh                    # Batch execution helper
 ```
 
----
-
-## Running Existing Tasks
+## Running Tasks
 
 ### Single Task
 
@@ -111,7 +184,7 @@ This will:
 * Save intermediate **checkpoints**
 * Evaluate and materialize the **best program** per run
 
-### Evaluate a Discovered Program
+## Evaluating a Discovered Program
 
 ```bash
 EVAL_TASK_NAME="data_constrained_scaling_law" \
@@ -119,9 +192,7 @@ uv run python evaluator.py \
   results/data_constrained_scaling_law/run_1/best/best_program.py
 ```
 
----
-
-## How to Add a New Scaling Law
+## Add a New Scaling Law
 
 ### 1) Create a Config
 
@@ -152,7 +223,7 @@ prompt:
     for [describe your domain]. Your task is to evolve both the `scaling_law_func` function
     and the `fit_scaling_law` optimization algorithm.
 
-    **IMPORTANT: The scaling law function must use no more than 7 parameters.**
+    **IMPORTANT: The scaling law function must use no more than [you_define_it] parameters.**
 
     **DATA CHARACTERISTICS:**
     - Features: [describe your features] - [N]D input
@@ -163,13 +234,13 @@ prompt:
     ```python
     def scaling_law_func(data_points, params):
         # data_points: (N,F) array with your features
-        # params: Array of up to 7 parameters
+        # params: Array of up to [you_define_it] parameters
         # Returns: Predicted values
 
     def fit_scaling_law(data_points, target_values):
         # data_points: (N,F) array with your features  
         # target_values: Array of corresponding targets
-        # Returns: Optimized parameters (up to 7 parameters)
+        # Returns: Optimized parameters (up to [you_define_it] parameters)
     ```
 
   num_top_programs: 3
@@ -245,7 +316,7 @@ def load_data_for_task(
     X = df[feature_columns].values
     y = df['target'].values
 
-    # 80/20 split with shuffling
+    # 80/20 split with shuffling (or creating extrapolation set)
     n = len(df)
     n_train = int(0.8 * n)
     idx = np.random.permutation(n)
@@ -279,65 +350,60 @@ tasks=(
 )
 ```
 
----
+## Configuration Guide
 
-## Configuration Tips
+Key knobs to tune:
 
-* **Search budget**: increase `max_iterations` and `population_size` to explore more aggressively.
-* **Exploration vs. exploitation**: tune `exploration_ratio`/`exploitation_ratio`.
-* **Parallelism**: raise `parallel_evaluations` to speed up evaluation throughput.
-* **Reproducibility**: keep `random_seed` fixed for apples‑to‑apples comparisons.
-* **API resilience**: bump `llm.timeout` and `llm.retries` for flaky networks/providers.
+* **Search budget**: Increase `max_iterations` and `population_size` to explore more aggressively.
+* **Exploration vs. exploitation**: Adjust `exploration_ratio` / `exploitation_ratio` and `elite_selection_ratio`.
+* **Parallelism**: Raise `parallel_evaluations` to speed up throughput.
+* **Reproducibility**: Fix `random_seed` for apples‑to‑apples comparisons.
+* **API resilience**: Bump `llm.timeout` and `llm.retries` for flaky networks/providers.
 
----
+## Data Interface
 
-## Results & Checkpoints
+* Input to programs is `(N, F)` **features** and a 1‑D **target**.
+* Use task‑specific loaders for custom schemas; provide a stable key like `"all_data"`.
 
-After runs, you’ll find:
+## Tips for Search/Evolution
 
-```
-results/{task_name}/{run_id}/
-├─ checkpoints/
-│  ├─ checkpoint_1/
-│  │  ├─ best_program.py         # Best program at this checkpoint
-│  │  ├─ best_program_info.json
-│  │  ├─ metadata.json
-│  │  └─ programs/               # All candidate programs
-│  └─ ...
-├─ logs/                         # Execution logs
-└─ best/                         # Final best program (symlink)
-   └─ best_program.py
-```
-
----
+* Start with modest budgets; inspect intermediate checkpoints in `results/*/checkpoints/*/`.
+* If evolution stalls, try: larger `population_size`, higher `exploration_ratio`, or enabling more diverse prompts.
+* Consider grouping data by regimes (e.g., compute‑limited vs. data‑limited) and evaluating on each subset.
 
 ## Troubleshooting
 
-* **Import errors** → re‑sync deps: `uv sync`
-* **Task not found** → ensure `EVAL_TASK_NAME` matches a key in `TASK_CONFIG`
-* **Data loader shape issues** → return `Dict[str, Tuple[np.ndarray, np.ndarray]]`
-* **Evolution stalls** → increase `exploration_ratio`, population size, or iterations
-* **API timeouts** → increase `llm.timeout` / `llm.retries`; check your `api_base`
-* **Batch script not executable** → `chmod +x scripts/run.sh` or run with `bash scripts/run.sh`
-
----
+* **Import errors** → re‑sync deps: `uv sync`.
+* **Task not found** → ensure `EVAL_TASK_NAME` matches a key in `TASK_CONFIG`.
+* **Data loader shape issues** → return `Dict[str, Tuple[np.ndarray, np.ndarray]]`.
+* **Evolution stalls** → increase `exploration_ratio`, population size, or iterations.
+* **API timeouts** → increase `llm.timeout` / `llm.retries`; check `api_base` / `OPENAI_BASE_URL`.
+* **Batch script not executable** → `chmod +x scripts/run.sh` or run with `bash scripts/run.sh`.
 
 ## FAQ
 
-**Q: Do I have to use OpenAI specifically?**
-A: No. Any **OpenAI‑compatible** endpoint works (set `api_base` in the YAML).
+**Do I have to use OpenAI specifically?**
+No. Any **OpenAI‑compatible** endpoint works. Set `api_base` in YAML or `OPENAI_BASE_URL` in your environment.
 
-**Q: Can I use plain `pip` instead of `uv`?**
-A: Yes—create/activate a virtualenv and install requirements; then run the same commands using `python`.
+**Can I use plain `pip` instead of `uv`?**
+Yes—create/activate a virtualenv and install requirements; then run the same commands using `python`.
 
----
+**Where are results stored?**
+Under `results/{task_name}/{run_id}/` with `checkpoints/`, `logs/`, and the final `best/best_program.py`.
+
+## Cite
+
+If you use EvoSLD in academic work, please cite:
+
+```bibtex
+@article{lin2025evosld,
+  title   = {EvoSLD: Automated Neural Scaling Law Discovery With Large Language Models},
+  author  = {Lin, Haowei et al},
+  journal = {arXiv preprint arXiv:2507.21184},
+  year    = {2025}
+}
+```
 
 ## Acknowledgments
 
 * Built on the excellent **[OpenEvolve](https://github.com/codelion/openevolve)** evolutionary coding framework.
-
----
-
-## Citation
-
-If you use EvoSLD in academic work, please cite this repository and OpenEvolve.
