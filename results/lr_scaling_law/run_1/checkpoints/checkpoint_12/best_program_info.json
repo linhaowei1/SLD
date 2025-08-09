@@ -1,0 +1,15 @@
+{
+  "id": "5d70f3fb-4bc1-4c80-b980-15f7687e8e81",
+  "generation": 1,
+  "iteration": 8,
+  "current_iteration": 12,
+  "metrics": {
+    "nmse": 0.39389171575651705,
+    "nmae": 0.5087149307690798,
+    "r2": 0.606108284243483,
+    "combined_score": 0.7174158427774733
+  },
+  "language": "python",
+  "timestamp": 1754716965.5610793,
+  "saved_at": 1754716981.6059604
+}

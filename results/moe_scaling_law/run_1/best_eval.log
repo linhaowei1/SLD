@@ -1,0 +1,12 @@
+--- Running Evaluation for Program: results/moe_scaling_law/run_1/best/best_program.py ---
+Inferred Task: moe_scaling_law
+
+--- Final Test Results ---
+  Normalized MSE (NMSE): 0.106061
+  Normalized MAE (NMAE): 0.313374
+  R-squared (R2):        0.893939
+  Combined Score:        0.904109
+
+Fitted parameters for 1 group(s):
+  - Group 'all_data': [0.1269 0.1156 0.216  0.0718 3.     1.4938]
+--------------------------

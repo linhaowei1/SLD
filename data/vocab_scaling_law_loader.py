@@ -21,9 +21,9 @@ def load_data_for_task(
     y = df['Lossu'].values
 
     # Shuffle and split
-    max_param_size = df["Non_vocab_parameters"].max()
+    max_param_size = df["vocab_size"].max()
 
-    test_mask = (df["Non_vocab_parameters"] == max_param_size)
+    test_mask = (df["vocab_size"] == max_param_size)
 
     if train:
         train_mask = ~test_mask

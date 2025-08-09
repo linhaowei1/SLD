@@ -1,0 +1,12 @@
+--- Running Evaluation for Program: results/data_constrained_scaling_law/run_2/best/best_program.py ---
+Inferred Task: data_constrained_scaling_law
+
+--- Final Test Results ---
+  Normalized MSE (NMSE): 0.040545
+  Normalized MAE (NMAE): 0.298188
+  R-squared (R2):        0.959455
+  Combined Score:        0.961035
+
+Fitted parameters for 1 group(s):
+  - Group 'all_data': [ 0.6502  2.4865 -1.9935  7.2249 -0.8747 11.4245 -0.5935]
+--------------------------

@@ -1,0 +1,53 @@
+--- Running Evaluation for Program: results/rectified_scaling_law/run_3/best/best_program.py ---
+Inferred Task: rectified_scaling_law
+
+--- Final Test Results ---
+  Normalized MSE (NMSE): 0.002433
+  Normalized MAE (NMAE): 0.046401
+  R-squared (R2):        0.997567
+  Combined Score:        0.997573
+
+Fitted parameters for 42 group(s):
+  - Group '('MBZUAI/LaMini-GPT-124M', 'flan')': [ 2.7509 -1.8662  8.7624 -3.3072]
+  - Group '('MBZUAI/LaMini-GPT-774M', 'flan')': [ 2.6994 -1.8375  9.6379 -5.3949]
+  - Group '('cerebras/Cerebras-GPT-256M', 'flan')': [ 2.4854 -2.0414 10.6054 -9.4487]
+  - Group '('cerebras/Cerebras-GPT-1.3B', 'flan')': [ 1.3814 -2.4066  7.0194 -0.4477]
+  - Group '('facebook/bart-base', 'flan')': [ 2.5177 -1.9478  8.3056 -2.4232]
+  - Group '('facebook/bart-large', 'flan')': [ 2.1192 -2.1457  8.7699 -3.814 ]
+  - Group '('facebook/opt-1.3b', 'flan')': [ 1.2592 -2.5779  7.3889 -1.0434]
+  - Group '('facebook/opt-350m', 'flan')': [ 2.2908 -2.0098  9.7423 -1.4836]
+  - Group '('facebook/opt-6.7b', 'flan')': [ 0.1795 -2.0225  6.1733  0.4237]
+  - Group '('gpt2', 'flan')': [ 2.7879 -1.8644  8.6699 -4.9357]
+  - Group '('t5-base', 'flan')': [ 1.77   -2.2839  9.5144 -1.8947]
+  - Group '('t5-small', 'flan')': [ 1.671  -2.5345  8.3382 -2.627 ]
+  - Group '('google/mt5-base', 'flan')': [ 1.6229 -2.5537  6.3534 -2.1677]
+  - Group '('google/mt5-large', 'flan')': [ 1.274  -2.2879  6.7763 -0.2502]
+  - Group '('MBZUAI/LaMini-GPT-124M', 'gigaword')': [ 2.99   -1.5263  8.4449 -5.142 ]
+  - Group '('MBZUAI/LaMini-GPT-774M', 'gigaword')': [ 2.8028 -1.532   8.2379 -3.4995]
+  - Group '('cerebras/Cerebras-GPT-256M', 'gigaword')': [ 2.5388 -1.713   8.4337 -7.9483]
+  - Group '('cerebras/Cerebras-GPT-1.3B', 'gigaword')': [ 2.145  -1.8977  8.2331 -2.4158]
+  - Group '('facebook/bart-base', 'gigaword')': [ 4.5071 -0.9147  8.6582 -0.5701]
+  - Group '('facebook/bart-large', 'gigaword')': [ 4.1247 -0.9934  8.3347 -0.8144]
+  - Group '('facebook/opt-1.3b', 'gigaword')': [ 2.1646 -1.8219  7.0838 -2.4552]
+  - Group '('facebook/opt-350m', 'gigaword')': [ 3.5187 -1.1652  8.268  -0.6495]
+  - Group '('facebook/opt-6.7b', 'gigaword')': [ 0.1015 -2.2129  6.1713  0.4183]
+  - Group '('gpt2', 'gigaword')': [ 2.8378 -1.5552  7.9625 -4.2903]
+  - Group '('t5-base', 'gigaword')': [ 0.8453 -1.6133  6.4578 -0.805 ]
+  - Group '('t5-small', 'gigaword')': [ 0.9281 -1.5822  6.3987 -0.6151]
+  - Group '('google/mt5-base', 'gigaword')': [ 1.248  -2.9601  7.7338 -0.7626]
+  - Group '('google/mt5-large', 'gigaword')': [ 1.4652 -2.7231  8.2105 -1.2873]
+  - Group '('MBZUAI/LaMini-GPT-124M', 'wikiword')': [ 1.5608 -2.2569  7.5652 -1.0046]
+  - Group '('MBZUAI/LaMini-GPT-774M', 'wikiword')': [ 1.0524 -2.3819  6.6237 -0.5901]
+  - Group '('cerebras/Cerebras-GPT-256M', 'wikiword')': [ 1.6143 -2.5025  6.3843 -3.1759]
+  - Group '('cerebras/Cerebras-GPT-1.3B', 'wikiword')': [ 1.2912 -2.6136  7.447  -1.5837]
+  - Group '('facebook/bart-base', 'wikiword')': [ 2.9105 -1.1001  6.3675  0.2649]
+  - Group '('facebook/bart-large', 'wikiword')': [  1.047   -2.7157 -24.2216  -1.895 ]
+  - Group '('facebook/opt-1.3b', 'wikiword')': [ 0.6995 -2.1579  6.4082 -0.088 ]
+  - Group '('facebook/opt-350m', 'wikiword')': [ 1.1581 -2.3794  6.5524 -0.4914]
+  - Group '('facebook/opt-6.7b', 'wikiword')': [ 0.3572 -2.385   6.3459 -0.1352]
+  - Group '('gpt2', 'wikiword')': [ 1.4866 -2.379   6.3583 -1.3374]
+  - Group '('t5-base', 'wikiword')': [ 0.8626 -2.6551  7.4426 -1.2221]
+  - Group '('t5-small', 'wikiword')': [ 1.2351 -2.6208  8.2226 -2.706 ]
+  - Group '('google/mt5-base', 'wikiword')': [ 1.8356 -2.0047  6.8514 -1.2973]
+  - Group '('google/mt5-large', 'wikiword')': [ 1.5387 -1.9858  6.6283 -0.4656]
+--------------------------
