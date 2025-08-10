@@ -1,0 +1,2 @@
+2025-08-10 12:01:35,046 - openevolve.controller - INFO - Logging to results/lr_scaling_law/run_2/logs/openevolve_20250810_120135.log
+2025-08-10 12:01:35,049 - openevolve.controller - INFO - Set random seed to 42 for reproducibility

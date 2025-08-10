@@ -1,0 +1,260 @@
+2025-08-10 11:59:10,966 - openevolve.controller - INFO - Logging to results/lr_scaling_law/run_1/logs/openevolve_20250810_115910.log
+2025-08-10 11:59:10,969 - openevolve.controller - INFO - Set random seed to 42 for reproducibility
+2025-08-10 11:59:10,995 - openevolve.llm.openai - INFO - Initialized OpenAI LLM with model: o4-mini
+2025-08-10 11:59:10,996 - openevolve.llm.ensemble - INFO - Initialized LLM ensemble with models: o4-mini (weight: 1.00)
+2025-08-10 11:59:11,011 - openevolve.prompt.sampler - INFO - Initialized prompt sampler
+2025-08-10 11:59:11,011 - openevolve.prompt.sampler - INFO - Set custom templates: system=evaluator_system_message, user=None
+2025-08-10 11:59:11,011 - openevolve.database - INFO - Initialized program database with 0 programs
+2025-08-10 11:59:11,011 - openevolve.evaluator - INFO - Successfully loaded evaluation function from evaluator.py
+2025-08-10 11:59:11,012 - openevolve.evaluator - INFO - Initialized evaluator with evaluator.py
+2025-08-10 11:59:11,012 - openevolve.controller - INFO - Initialized OpenEvolve with init_program.py
+2025-08-10 11:59:11,012 - openevolve.controller - INFO - Adding initial program to database
+2025-08-10 11:59:11,465 - openevolve.evaluator - INFO - Evaluated program 3317baa2-5025-406a-abd1-750d543d4564 in 0.45s: nmse=99589215585519330125424885760.0000, nmae=428288771110437.7500, r2=-99589215585519330125424885760.0000, combined_score=0.0000
+2025-08-10 11:59:11,465 - openevolve.database - INFO - New MAP-Elites cell occupied: {'combined_score': 25}
+2025-08-10 11:59:11,466 - openevolve.process_parallel - INFO - Initialized process parallel controller with 4 workers
+2025-08-10 11:59:11,466 - openevolve.process_parallel - INFO - Started process pool with 4 processes
+2025-08-10 11:59:11,466 - openevolve.controller - INFO - Using island-based evolution with 5 islands
+2025-08-10 11:59:11,466 - openevolve.database - INFO - Island Status:
+2025-08-10 11:59:11,466 - openevolve.database - INFO -  * Island 0: 1 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0 (best: 3317baa2-5025-406a-abd1-750d543d4564)
+2025-08-10 11:59:11,466 - openevolve.database - INFO -    Island 1: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 11:59:11,466 - openevolve.database - INFO -    Island 2: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 11:59:11,466 - openevolve.database - INFO -    Island 3: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 11:59:11,466 - openevolve.database - INFO -    Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 11:59:11,466 - openevolve.process_parallel - INFO - Starting process-based evolution from iteration 1 for 50 iterations (total: 51)
+2025-08-10 11:59:11,510 - openevolve.prompt.sampler - INFO - Set custom templates: system=evaluator_system_message, user=None
+2025-08-10 11:59:11,510 - openevolve.prompt.sampler - INFO - Set custom templates: system=evaluator_system_message, user=None
+2025-08-10 11:59:11,511 - openevolve.prompt.sampler - INFO - Set custom templates: system=evaluator_system_message, user=None
+2025-08-10 11:59:11,511 - openevolve.prompt.sampler - INFO - Set custom templates: system=evaluator_system_message, user=None
+2025-08-10 11:59:11,511 - openevolve.evaluator - INFO - Successfully loaded evaluation function from evaluator.py
+2025-08-10 11:59:11,511 - openevolve.evaluator - INFO - Initialized evaluator with evaluator.py
+2025-08-10 11:59:11,511 - openevolve.evaluator - INFO - Successfully loaded evaluation function from evaluator.py
+2025-08-10 11:59:11,511 - openevolve.evaluator - INFO - Successfully loaded evaluation function from evaluator.py
+2025-08-10 11:59:11,511 - openevolve.evaluator - INFO - Successfully loaded evaluation function from evaluator.py
+2025-08-10 11:59:11,511 - openevolve.evaluator - INFO - Initialized evaluator with evaluator.py
+2025-08-10 11:59:11,511 - openevolve.evaluator - INFO - Initialized evaluator with evaluator.py
+2025-08-10 11:59:11,511 - openevolve.evaluator - INFO - Initialized evaluator with evaluator.py
+2025-08-10 11:59:11,512 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 11:59:11,512 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 11:59:11,512 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 11:59:11,512 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 11:59:36,340 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 11:59:36,362 - openevolve.evaluator - INFO - Evaluated program 1af412d2-336a-4f67-94f0-a291cea85d24 in 0.02s: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 11:59:36,364 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 11:59:36,371 - openevolve.database - INFO - New MAP-Elites cell occupied: {'combined_score': 49}
+2025-08-10 11:59:36,372 - openevolve.database - INFO - New best program 1af412d2-336a-4f67-94f0-a291cea85d24 replaces 3317baa2-5025-406a-abd1-750d543d4564 (combined_score: 0.0000 → 0.0060, +0.0060)
+2025-08-10 11:59:36,372 - openevolve.process_parallel - INFO - Iteration 2: Program 1af412d2-336a-4f67-94f0-a291cea85d24 (parent: 3317baa2-5025-406a-abd1-750d543d4564) completed in 24.85s
+2025-08-10 11:59:36,372 - openevolve.process_parallel - INFO - Metrics: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 11:59:36,372 - openevolve.process_parallel - INFO - 🌟 New best solution found at iteration 2: 1af412d2-336a-4f67-94f0-a291cea85d24
+2025-08-10 11:59:36,372 - openevolve.process_parallel - INFO - Checkpoint interval reached at iteration 2
+2025-08-10 11:59:36,372 - openevolve.database - INFO - Island Status:
+2025-08-10 11:59:36,372 - openevolve.database - INFO -  * Island 0: 2 programs, best=0.0060, avg=0.0030, diversity=537.80, gen=1 (best: 1af412d2-336a-4f67-94f0-a291cea85d24)
+2025-08-10 11:59:36,372 - openevolve.database - INFO -    Island 1: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 11:59:36,372 - openevolve.database - INFO -    Island 2: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 11:59:36,373 - openevolve.database - INFO -    Island 3: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 11:59:36,373 - openevolve.database - INFO -    Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 11:59:36,374 - openevolve.database - INFO - Saved database with 2 programs to results/lr_scaling_law/run_1/checkpoints/checkpoint_2
+2025-08-10 11:59:36,374 - openevolve.controller - INFO - Saved best program at checkpoint 2 with metrics: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 11:59:36,374 - openevolve.controller - INFO - Saved checkpoint at iteration 2 to results/lr_scaling_law/run_1/checkpoints/checkpoint_2
+2025-08-10 11:59:40,342 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 11:59:40,363 - openevolve.evaluator - INFO - Evaluated program 469101bf-b855-4014-bafb-146f8949331a in 0.01s: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 11:59:40,365 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 11:59:40,372 - openevolve.process_parallel - INFO - Iteration 1: Program 469101bf-b855-4014-bafb-146f8949331a (parent: 3317baa2-5025-406a-abd1-750d543d4564) completed in 28.85s
+2025-08-10 11:59:40,373 - openevolve.process_parallel - INFO - Metrics: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 11:59:40,373 - openevolve.process_parallel - INFO - Checkpoint interval reached at iteration 1
+2025-08-10 11:59:40,373 - openevolve.database - INFO - Island Status:
+2025-08-10 11:59:40,373 - openevolve.database - INFO -  * Island 0: 3 programs, best=0.0060, avg=0.0040, diversity=358.53, gen=2 (best: 1af412d2-336a-4f67-94f0-a291cea85d24)
+2025-08-10 11:59:40,373 - openevolve.database - INFO -    Island 1: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 11:59:40,373 - openevolve.database - INFO -    Island 2: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 11:59:40,373 - openevolve.database - INFO -    Island 3: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 11:59:40,373 - openevolve.database - INFO -    Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 11:59:40,375 - openevolve.database - INFO - Saved database with 3 programs to results/lr_scaling_law/run_1/checkpoints/checkpoint_1
+2025-08-10 11:59:40,376 - openevolve.controller - INFO - Saved best program at checkpoint 1 with metrics: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 11:59:40,376 - openevolve.controller - INFO - Saved checkpoint at iteration 1 to results/lr_scaling_law/run_1/checkpoints/checkpoint_1
+2025-08-10 11:59:41,392 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 11:59:41,414 - openevolve.evaluator - INFO - Evaluated program 23b9cc3e-7d16-4671-9533-1a81bf84ace5 in 0.02s: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 11:59:41,415 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 11:59:41,416 - openevolve.process_parallel - INFO - Iteration 3: Program 23b9cc3e-7d16-4671-9533-1a81bf84ace5 (parent: 3317baa2-5025-406a-abd1-750d543d4564) completed in 29.90s
+2025-08-10 11:59:41,416 - openevolve.process_parallel - INFO - Metrics: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 11:59:41,416 - openevolve.process_parallel - INFO - Checkpoint interval reached at iteration 3
+2025-08-10 11:59:41,417 - openevolve.database - INFO - Island Status:
+2025-08-10 11:59:41,417 - openevolve.database - INFO -    Island 0: 4 programs, best=0.0060, avg=0.0045, diversity=268.90, gen=2 (best: 1af412d2-336a-4f67-94f0-a291cea85d24)
+2025-08-10 11:59:41,417 - openevolve.database - INFO -  * Island 1: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=1
+2025-08-10 11:59:41,417 - openevolve.database - INFO -    Island 2: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 11:59:41,417 - openevolve.database - INFO -    Island 3: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 11:59:41,417 - openevolve.database - INFO -    Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 11:59:41,420 - openevolve.database - INFO - Saved database with 4 programs to results/lr_scaling_law/run_1/checkpoints/checkpoint_3
+2025-08-10 11:59:41,420 - openevolve.controller - INFO - Saved best program at checkpoint 3 with metrics: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 11:59:41,420 - openevolve.controller - INFO - Saved checkpoint at iteration 3 to results/lr_scaling_law/run_1/checkpoints/checkpoint_3
+2025-08-10 11:59:46,488 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 11:59:46,508 - openevolve.evaluator - INFO - Evaluated program ace50a71-ab61-4286-9b60-45399136b115 in 0.01s: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 11:59:46,509 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 11:59:46,519 - openevolve.process_parallel - INFO - Iteration 4: Program ace50a71-ab61-4286-9b60-45399136b115 (parent: 3317baa2-5025-406a-abd1-750d543d4564) completed in 35.00s
+2025-08-10 11:59:46,519 - openevolve.process_parallel - INFO - Metrics: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 11:59:46,519 - openevolve.process_parallel - INFO - Checkpoint interval reached at iteration 4
+2025-08-10 11:59:46,519 - openevolve.database - INFO - Island Status:
+2025-08-10 11:59:46,519 - openevolve.database - INFO -    Island 0: 4 programs, best=0.0060, avg=0.0045, diversity=268.90, gen=2 (best: 1af412d2-336a-4f67-94f0-a291cea85d24)
+2025-08-10 11:59:46,519 - openevolve.database - INFO -    Island 1: 1 programs, best=0.0060, avg=0.0060, diversity=0.00, gen=1 (best: ace50a71-ab61-4286-9b60-45399136b115)
+2025-08-10 11:59:46,519 - openevolve.database - INFO -  * Island 2: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=1
+2025-08-10 11:59:46,520 - openevolve.database - INFO -    Island 3: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 11:59:46,520 - openevolve.database - INFO -    Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 11:59:46,521 - openevolve.database - INFO - Saved database with 5 programs to results/lr_scaling_law/run_1/checkpoints/checkpoint_4
+2025-08-10 11:59:46,522 - openevolve.controller - INFO - Saved best program at checkpoint 4 with metrics: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 11:59:46,522 - openevolve.controller - INFO - Saved checkpoint at iteration 4 to results/lr_scaling_law/run_1/checkpoints/checkpoint_4
+2025-08-10 12:00:05,542 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 12:00:05,556 - openevolve.evaluator - INFO - Evaluated program adcfa068-4d67-4e29-8682-9c400632a534 in 0.01s: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 12:00:05,558 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 12:00:05,562 - openevolve.process_parallel - INFO - Iteration 5: Program adcfa068-4d67-4e29-8682-9c400632a534 (parent: 3317baa2-5025-406a-abd1-750d543d4564) completed in 29.19s
+2025-08-10 12:00:05,562 - openevolve.process_parallel - INFO - Metrics: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 12:00:05,562 - openevolve.process_parallel - INFO - Checkpoint interval reached at iteration 5
+2025-08-10 12:00:05,563 - openevolve.database - INFO - Island Status:
+2025-08-10 12:00:05,563 - openevolve.database - INFO -    Island 0: 4 programs, best=0.0060, avg=0.0045, diversity=268.90, gen=2 (best: 1af412d2-336a-4f67-94f0-a291cea85d24)
+2025-08-10 12:00:05,563 - openevolve.database - INFO -    Island 1: 1 programs, best=0.0060, avg=0.0060, diversity=0.00, gen=1 (best: ace50a71-ab61-4286-9b60-45399136b115)
+2025-08-10 12:00:05,563 - openevolve.database - INFO -    Island 2: 1 programs, best=0.0060, avg=0.0060, diversity=0.00, gen=1 (best: adcfa068-4d67-4e29-8682-9c400632a534)
+2025-08-10 12:00:05,563 - openevolve.database - INFO -  * Island 3: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=1
+2025-08-10 12:00:05,563 - openevolve.database - INFO -    Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 12:00:05,565 - openevolve.database - INFO - Saved database with 6 programs to results/lr_scaling_law/run_1/checkpoints/checkpoint_5
+2025-08-10 12:00:05,566 - openevolve.controller - INFO - Saved best program at checkpoint 5 with metrics: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 12:00:05,566 - openevolve.controller - INFO - Saved checkpoint at iteration 5 to results/lr_scaling_law/run_1/checkpoints/checkpoint_5
+2025-08-10 12:00:05,852 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 12:00:05,885 - openevolve.evaluator - INFO - Evaluated program 5df73544-0a64-4075-a676-cb58751a13e5 in 0.03s: nmse=158.4916, nmae=17.0489, r2=-157.4916, combined_score=0.0063
+2025-08-10 12:00:05,887 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 12:00:05,890 - openevolve.database - INFO - MAP-Elites cell improved: {'combined_score': 49} (fitness: 4.601 -> 4.514)
+2025-08-10 12:00:05,890 - openevolve.database - INFO - New best program 5df73544-0a64-4075-a676-cb58751a13e5 replaces 1af412d2-336a-4f67-94f0-a291cea85d24 (combined_score: 0.0060 → 0.0063, +0.0002)
+2025-08-10 12:00:05,890 - openevolve.process_parallel - INFO - Iteration 6: Program 5df73544-0a64-4075-a676-cb58751a13e5 (parent: 3317baa2-5025-406a-abd1-750d543d4564) completed in 25.52s
+2025-08-10 12:00:05,890 - openevolve.process_parallel - INFO - Metrics: nmse=158.4916, nmae=17.0489, r2=-157.4916, combined_score=0.0063
+2025-08-10 12:00:05,890 - openevolve.process_parallel - INFO - 🌟 New best solution found at iteration 6: 5df73544-0a64-4075-a676-cb58751a13e5
+2025-08-10 12:00:05,890 - openevolve.process_parallel - INFO - Checkpoint interval reached at iteration 6
+2025-08-10 12:00:05,891 - openevolve.database - INFO - Island Status:
+2025-08-10 12:00:05,891 - openevolve.database - INFO -    Island 0: 4 programs, best=0.0060, avg=0.0045, diversity=268.90, gen=2 (best: 1af412d2-336a-4f67-94f0-a291cea85d24)
+2025-08-10 12:00:05,891 - openevolve.database - INFO -    Island 1: 1 programs, best=0.0060, avg=0.0060, diversity=0.00, gen=1 (best: ace50a71-ab61-4286-9b60-45399136b115)
+2025-08-10 12:00:05,891 - openevolve.database - INFO -    Island 2: 1 programs, best=0.0060, avg=0.0060, diversity=0.00, gen=1 (best: adcfa068-4d67-4e29-8682-9c400632a534)
+2025-08-10 12:00:05,891 - openevolve.database - INFO -    Island 3: 1 programs, best=0.0063, avg=0.0063, diversity=0.00, gen=1 (best: 5df73544-0a64-4075-a676-cb58751a13e5)
+2025-08-10 12:00:05,891 - openevolve.database - INFO -  * Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=1
+2025-08-10 12:00:05,894 - openevolve.database - INFO - Saved database with 7 programs to results/lr_scaling_law/run_1/checkpoints/checkpoint_6
+2025-08-10 12:00:05,894 - openevolve.controller - INFO - Saved best program at checkpoint 6 with metrics: nmse=158.4916, nmae=17.0489, r2=-157.4916, combined_score=0.0063
+2025-08-10 12:00:05,894 - openevolve.controller - INFO - Saved checkpoint at iteration 6 to results/lr_scaling_law/run_1/checkpoints/checkpoint_6
+2025-08-10 12:00:12,396 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 12:00:12,429 - openevolve.evaluator - INFO - Evaluated program 38666e81-9ba7-45f3-aa13-d07e7c963348 in 0.03s: nmse=158.4916, nmae=17.0489, r2=-157.4916, combined_score=0.0063
+2025-08-10 12:00:12,431 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 12:00:12,436 - openevolve.process_parallel - INFO - Iteration 8: Program 38666e81-9ba7-45f3-aa13-d07e7c963348 (parent: 3317baa2-5025-406a-abd1-750d543d4564) completed in 25.92s
+2025-08-10 12:00:12,436 - openevolve.process_parallel - INFO - Metrics: nmse=158.4916, nmae=17.0489, r2=-157.4916, combined_score=0.0063
+2025-08-10 12:00:12,436 - openevolve.process_parallel - INFO - Checkpoint interval reached at iteration 8
+2025-08-10 12:00:12,437 - openevolve.database - INFO - Island Status:
+2025-08-10 12:00:12,437 - openevolve.database - INFO -  * Island 0: 4 programs, best=0.0060, avg=0.0045, diversity=268.90, gen=3 (best: 1af412d2-336a-4f67-94f0-a291cea85d24)
+2025-08-10 12:00:12,437 - openevolve.database - INFO -    Island 1: 1 programs, best=0.0060, avg=0.0060, diversity=0.00, gen=1 (best: ace50a71-ab61-4286-9b60-45399136b115)
+2025-08-10 12:00:12,437 - openevolve.database - INFO -    Island 2: 1 programs, best=0.0060, avg=0.0060, diversity=0.00, gen=1 (best: adcfa068-4d67-4e29-8682-9c400632a534)
+2025-08-10 12:00:12,437 - openevolve.database - INFO -    Island 3: 1 programs, best=0.0063, avg=0.0063, diversity=0.00, gen=1 (best: 5df73544-0a64-4075-a676-cb58751a13e5)
+2025-08-10 12:00:12,437 - openevolve.database - INFO -    Island 4: 1 programs, best=0.0063, avg=0.0063, diversity=0.00, gen=1 (best: 38666e81-9ba7-45f3-aa13-d07e7c963348)
+2025-08-10 12:00:12,440 - openevolve.database - INFO - Saved database with 8 programs to results/lr_scaling_law/run_1/checkpoints/checkpoint_8
+2025-08-10 12:00:12,440 - openevolve.controller - INFO - Saved best program at checkpoint 8 with metrics: nmse=158.4916, nmae=17.0489, r2=-157.4916, combined_score=0.0063
+2025-08-10 12:00:12,440 - openevolve.controller - INFO - Saved checkpoint at iteration 8 to results/lr_scaling_law/run_1/checkpoints/checkpoint_8
+2025-08-10 12:00:16,078 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 12:00:16,092 - openevolve.evaluator - INFO - Evaluated program bb233e13-3dca-499c-8e50-5b91e54e8300 in 0.01s: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 12:00:16,095 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 12:00:16,096 - openevolve.database - INFO - New MAP-Elites cell occupied: {'combined_score': 48}
+2025-08-10 12:00:16,096 - openevolve.process_parallel - INFO - Iteration 7: Program bb233e13-3dca-499c-8e50-5b91e54e8300 (parent: 3317baa2-5025-406a-abd1-750d543d4564) completed in 34.68s
+2025-08-10 12:00:16,097 - openevolve.process_parallel - INFO - Metrics: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 12:00:16,097 - openevolve.process_parallel - INFO - Checkpoint interval reached at iteration 7
+2025-08-10 12:00:16,097 - openevolve.database - INFO - Island Status:
+2025-08-10 12:00:16,097 - openevolve.database - INFO -    Island 0: 5 programs, best=0.0060, avg=0.0048, diversity=179.27, gen=3 (best: 1af412d2-336a-4f67-94f0-a291cea85d24)
+2025-08-10 12:00:16,097 - openevolve.database - INFO -  * Island 1: 1 programs, best=0.0060, avg=0.0060, diversity=0.00, gen=2 (best: ace50a71-ab61-4286-9b60-45399136b115)
+2025-08-10 12:00:16,097 - openevolve.database - INFO -    Island 2: 1 programs, best=0.0060, avg=0.0060, diversity=0.00, gen=1 (best: adcfa068-4d67-4e29-8682-9c400632a534)
+2025-08-10 12:00:16,097 - openevolve.database - INFO -    Island 3: 1 programs, best=0.0063, avg=0.0063, diversity=0.00, gen=1 (best: 5df73544-0a64-4075-a676-cb58751a13e5)
+2025-08-10 12:00:16,097 - openevolve.database - INFO -    Island 4: 1 programs, best=0.0063, avg=0.0063, diversity=0.00, gen=1 (best: 38666e81-9ba7-45f3-aa13-d07e7c963348)
+2025-08-10 12:00:16,100 - openevolve.database - INFO - Saved database with 9 programs to results/lr_scaling_law/run_1/checkpoints/checkpoint_7
+2025-08-10 12:00:16,101 - openevolve.controller - INFO - Saved best program at checkpoint 7 with metrics: nmse=158.4916, nmae=17.0489, r2=-157.4916, combined_score=0.0063
+2025-08-10 12:00:16,101 - openevolve.controller - INFO - Saved checkpoint at iteration 7 to results/lr_scaling_law/run_1/checkpoints/checkpoint_7
+2025-08-10 12:00:28,398 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 12:00:28,412 - openevolve.evaluator - INFO - Evaluated program d5ea596c-9d58-4f4b-a721-96d8609c53ef in 0.01s: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 12:00:28,414 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 12:00:28,420 - openevolve.process_parallel - INFO - Iteration 11: Program d5ea596c-9d58-4f4b-a721-96d8609c53ef (parent: 469101bf-b855-4014-bafb-146f8949331a) completed in 15.98s
+2025-08-10 12:00:28,420 - openevolve.process_parallel - INFO - Metrics: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 12:00:28,420 - openevolve.process_parallel - INFO - Checkpoint interval reached at iteration 11
+2025-08-10 12:00:28,421 - openevolve.database - INFO - Island Status:
+2025-08-10 12:00:28,421 - openevolve.database - INFO -    Island 0: 5 programs, best=0.0060, avg=0.0048, diversity=179.27, gen=3 (best: 1af412d2-336a-4f67-94f0-a291cea85d24)
+2025-08-10 12:00:28,421 - openevolve.database - INFO -    Island 1: 2 programs, best=0.0060, avg=0.0060, diversity=77.20, gen=2 (best: ace50a71-ab61-4286-9b60-45399136b115)
+2025-08-10 12:00:28,421 - openevolve.database - INFO -  * Island 2: 1 programs, best=0.0060, avg=0.0060, diversity=0.00, gen=2 (best: adcfa068-4d67-4e29-8682-9c400632a534)
+2025-08-10 12:00:28,421 - openevolve.database - INFO -    Island 3: 1 programs, best=0.0063, avg=0.0063, diversity=0.00, gen=1 (best: 5df73544-0a64-4075-a676-cb58751a13e5)
+2025-08-10 12:00:28,421 - openevolve.database - INFO -    Island 4: 1 programs, best=0.0063, avg=0.0063, diversity=0.00, gen=1 (best: 38666e81-9ba7-45f3-aa13-d07e7c963348)
+2025-08-10 12:00:28,425 - openevolve.database - INFO - Saved database with 10 programs to results/lr_scaling_law/run_1/checkpoints/checkpoint_11
+2025-08-10 12:00:28,425 - openevolve.controller - INFO - Saved best program at checkpoint 11 with metrics: nmse=158.4916, nmae=17.0489, r2=-157.4916, combined_score=0.0063
+2025-08-10 12:00:28,425 - openevolve.controller - INFO - Saved checkpoint at iteration 11 to results/lr_scaling_law/run_1/checkpoints/checkpoint_11
+2025-08-10 12:00:37,429 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 12:00:37,444 - openevolve.evaluator - INFO - Evaluated program 144f5f8c-3f96-4fb0-9f18-e36dd50765a3 in 0.01s: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 12:00:37,446 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 12:00:37,452 - openevolve.process_parallel - INFO - Iteration 10: Program 144f5f8c-3f96-4fb0-9f18-e36dd50765a3 (parent: 3317baa2-5025-406a-abd1-750d543d4564) completed in 31.56s
+2025-08-10 12:00:37,452 - openevolve.process_parallel - INFO - Metrics: nmse=165.0027, nmae=17.3975, r2=-164.0027, combined_score=0.0060
+2025-08-10 12:00:37,453 - openevolve.process_parallel - INFO - Checkpoint interval reached at iteration 10
+2025-08-10 12:00:37,453 - openevolve.database - INFO - Island Status:
+2025-08-10 12:00:37,453 - openevolve.database - INFO -    Island 0: 5 programs, best=0.0060, avg=0.0048, diversity=179.27, gen=3 (best: 1af412d2-336a-4f67-94f0-a291cea85d24)
+2025-08-10 12:00:37,453 - openevolve.database - INFO -    Island 1: 2 programs, best=0.0060, avg=0.0060, diversity=77.20, gen=2 (best: ace50a71-ab61-4286-9b60-45399136b115)
+2025-08-10 12:00:37,453 - openevolve.database - INFO -    Island 2: 2 programs, best=0.0060, avg=0.0060, diversity=81.90, gen=2 (best: adcfa068-4d67-4e29-8682-9c400632a534)
+2025-08-10 12:00:37,453 - openevolve.database - INFO -  * Island 3: 1 programs, best=0.0063, avg=0.0063, diversity=0.00, gen=2 (best: 5df73544-0a64-4075-a676-cb58751a13e5)
+2025-08-10 12:00:37,453 - openevolve.database - INFO -    Island 4: 1 programs, best=0.0063, avg=0.0063, diversity=0.00, gen=1 (best: 38666e81-9ba7-45f3-aa13-d07e7c963348)
+2025-08-10 12:00:37,457 - openevolve.database - INFO - Saved database with 11 programs to results/lr_scaling_law/run_1/checkpoints/checkpoint_10
+2025-08-10 12:00:37,458 - openevolve.controller - INFO - Saved best program at checkpoint 10 with metrics: nmse=158.4916, nmae=17.0489, r2=-157.4916, combined_score=0.0063
+2025-08-10 12:00:37,458 - openevolve.controller - INFO - Saved checkpoint at iteration 10 to results/lr_scaling_law/run_1/checkpoints/checkpoint_10
+2025-08-10 12:00:38,703 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 12:00:38,717 - openevolve.evaluator - INFO - Evaluated program 89c33dba-6d75-4210-884f-956ea9ca8b78 in 0.01s: nmse=163.2903, nmae=17.3067, r2=-162.2903, combined_score=0.0061
+2025-08-10 12:00:38,719 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 12:00:38,721 - openevolve.database - INFO - MAP-Elites cell improved: {'combined_score': 48} (fitness: 4.601 -> 4.578)
+2025-08-10 12:00:38,721 - openevolve.process_parallel - INFO - Iteration 9: Program 89c33dba-6d75-4210-884f-956ea9ca8b78 (parent: 1af412d2-336a-4f67-94f0-a291cea85d24) completed in 33.16s
+2025-08-10 12:00:38,721 - openevolve.process_parallel - INFO - Metrics: nmse=163.2903, nmae=17.3067, r2=-162.2903, combined_score=0.0061
+2025-08-10 12:00:38,721 - openevolve.process_parallel - INFO - Checkpoint interval reached at iteration 9
+2025-08-10 12:00:38,722 - openevolve.database - INFO - Island Status:
+2025-08-10 12:00:38,722 - openevolve.database - INFO -    Island 0: 5 programs, best=0.0060, avg=0.0048, diversity=179.27, gen=3 (best: 1af412d2-336a-4f67-94f0-a291cea85d24)
+2025-08-10 12:00:38,722 - openevolve.database - INFO -    Island 1: 2 programs, best=0.0060, avg=0.0060, diversity=77.20, gen=2 (best: ace50a71-ab61-4286-9b60-45399136b115)
+2025-08-10 12:00:38,722 - openevolve.database - INFO -    Island 2: 2 programs, best=0.0060, avg=0.0060, diversity=81.90, gen=2 (best: adcfa068-4d67-4e29-8682-9c400632a534)
+2025-08-10 12:00:38,722 - openevolve.database - INFO -    Island 3: 2 programs, best=0.0063, avg=0.0062, diversity=434.30, gen=2 (best: 5df73544-0a64-4075-a676-cb58751a13e5)
+2025-08-10 12:00:38,722 - openevolve.database - INFO -  * Island 4: 1 programs, best=0.0063, avg=0.0063, diversity=0.00, gen=2 (best: 38666e81-9ba7-45f3-aa13-d07e7c963348)
+2025-08-10 12:00:38,727 - openevolve.database - INFO - Saved database with 12 programs to results/lr_scaling_law/run_1/checkpoints/checkpoint_9
+2025-08-10 12:00:38,727 - openevolve.controller - INFO - Saved best program at checkpoint 9 with metrics: nmse=158.4916, nmae=17.0489, r2=-157.4916, combined_score=0.0063
+2025-08-10 12:00:38,727 - openevolve.controller - INFO - Saved checkpoint at iteration 9 to results/lr_scaling_law/run_1/checkpoints/checkpoint_9
+2025-08-10 12:00:39,335 - openevolve.controller - INFO - Received signal 2, initiating graceful shutdown...
+2025-08-10 12:00:39,335 - openevolve.controller - INFO - Received signal 2, initiating graceful shutdown...
+2025-08-10 12:00:39,335 - openevolve.controller - INFO - Received signal 2, initiating graceful shutdown...
+2025-08-10 12:00:39,335 - openevolve.controller - INFO - Received signal 2, initiating graceful shutdown...
+2025-08-10 12:00:39,335 - openevolve.controller - INFO - Received signal 2, initiating graceful shutdown...
+2025-08-10 12:00:39,335 - openevolve.process_parallel - INFO - Graceful shutdown requested...
+2025-08-10 12:00:39,335 - openevolve.process_parallel - INFO - Graceful shutdown requested...
+2025-08-10 12:00:39,335 - openevolve.process_parallel - INFO - Graceful shutdown requested...
+2025-08-10 12:00:39,335 - openevolve.process_parallel - INFO - Graceful shutdown requested...
+2025-08-10 12:00:39,335 - openevolve.process_parallel - INFO - Graceful shutdown requested...
+2025-08-10 12:00:39,344 - openevolve.process_parallel - INFO - Shutdown requested, canceling remaining evaluations...
+2025-08-10 12:00:39,344 - openevolve.process_parallel - INFO - Evolution completed
+2025-08-10 12:00:39,344 - openevolve.controller - INFO - Evolution stopped due to shutdown request
+2025-08-10 12:00:39,521 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:39,521 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:39,521 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:39,521 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:39,521 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:39,697 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:39,697 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:39,697 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:39,697 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:39,697 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:39,703 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 12:00:39,703 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 12:00:39,703 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 12:00:39,704 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 12:00:39,901 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:39,901 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:39,901 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:39,901 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:39,901 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:40,085 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:40,085 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:40,085 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:40,085 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:40,251 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:40,251 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:40,251 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:40,251 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 12:00:53,238 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 12:01:00,855 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 12:01:04,384 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 12:01:04,713 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 12:01:05,642 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 12:01:05,750 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 12:01:09,809 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 12:01:24,223 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"

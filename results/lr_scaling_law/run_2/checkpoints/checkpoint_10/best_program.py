@@ -1,97 +1,98 @@
+# EVOLVE-BLOCK-START
+"""
+Improved scaling‐law discovery for LLM training:
+We model log(loss) as a second‐order polynomial in the log of each feature
+(including squares and pairwise interactions) and fit via closed‐form ridge
+regression for numerical stability and parameter efficiency.
+"""
 import numpy as np
 
 def scaling_law_func(data_points, params):
     """
-    Predicts LM loss from hyperparameters via a multiplicative power‐law model:
-        loss ≈ exp(intercept + Σ_i w_i * log(x_i))
-    where x = [lr, bsz, data_size, non_embedding_param_size].
+    Predict language‐model loss from hyperparameters via a log‐domain polynomial.
 
-    Inputs:
-      data_points: array of shape (N,4)
-      params:       array of shape (5,) = [intercept, w_lr, w_bsz, w_data, w_param]
-
+    Args:
+      data_points: array of shape (N,4) with columns
+                   [lr, bsz, data_size, non_embedding_param_size]
+      params:      1D array of length P = 1 + F + F*(F+1)/2 where F=4
+                   = 1 (intercept)
+                     + 4 (main effects)
+                     + 10 (4 squares + 6 pairwise products)
     Returns:
-      preds: array of shape (N,) of predicted LM losses
+      preds: array of shape (N,) of predicted loss values.
     """
-    X = np.atleast_2d(np.asarray(data_points, dtype=np.float64))  # (N,4)
-    # clip to avoid log(0)
-    eps = 1e-12
-    X = np.maximum(X, eps)
-    logX = np.log(X)                                             # (N,4)
+    X = np.asarray(data_points, dtype=float)
+    # avoid log(0)
+    X = np.maximum(X, 1e-12)
+    logX = np.log(X)                # shape (N,4)
+    N, F = logX.shape
 
-    intercept = float(params[0])                                 # scalar
-    weights   = np.asarray(params[1:], dtype=np.float64)         # (4,)
+    p = np.asarray(params, dtype=float).ravel()
+    # expected number of parameters
+    P_expected = 1 + F + (F * (F + 1)) // 2
+    if p.size != P_expected:
+        raise ValueError(f"Expected {P_expected} parameters, got {p.size}")
 
-    # linear model in log-space
-    log_pred = intercept + logX.dot(weights)                     # (N,)
+    # build design matrix Phi
+    Phi = np.ones((N, P_expected), dtype=float)
+    # main effects
+    Phi[:, 1:1+F] = logX
+    # second-order terms: squares and pairwise interactions
+    idx = 1 + F
+    for i in range(F):
+        for j in range(i, F):
+            Phi[:, idx] = logX[:, i] * logX[:, j]
+            idx += 1
 
-    # numerical stability: clip log_pred to avoid overflow/underflow
-    log_pred = np.clip(log_pred, -50.0, 50.0)
-
-    # map back to original scale
-    preds = np.exp(log_pred)                                     # (N,)
-    return preds
+    # linear model in log-domain
+    log_pred = Phi.dot(p)
+    # back to original scale
+    return np.exp(log_pred)
 
 
 def fit_scaling_law(data_points, loss_values):
     """
-    Fits the power‐law model by linear regression in log-space with feature
-    normalization and ridge regularization:
-        log(loss) ≈ intercept + Σ_i w_i * log(x_i)
+    Fit the log‐domain polynomial scaling law via ridge regression.
 
-    Inputs:
+    Args:
       data_points: array of shape (N,4)
       loss_values: array of shape (N,)
-
     Returns:
-      params: array of shape (5,) = [intercept, w_lr, w_bsz, w_data, w_param]
+      params: 1D array of learned parameters of length P = 15
     """
-    X = np.atleast_2d(np.asarray(data_points, dtype=np.float64))  # (N,4)
-    y = np.asarray(loss_values, dtype=np.float64)                 # (N,)
+    X = np.asarray(data_points, dtype=float)
+    y = np.asarray(loss_values, dtype=float)
 
-    # clip to avoid log(0)
-    eps = 1e-12
-    X = np.maximum(X, eps)
-    y = np.maximum(y, eps)
+    # floor inputs and outputs to avoid log(0)
+    X = np.maximum(X, 1e-12)
+    y = np.maximum(y, 1e-12)
 
-    # take logs
-    logX = np.log(X)                                              # (N,4)
-    logy = np.log(y)                                              # (N,)
+    logX = np.log(X)   # shape (N,4)
+    logy = np.log(y)   # shape (N,)
 
-    N, F = logX.shape   # F should be 4
+    N, F = logX.shape
+    # total parameters: intercept + F main + F*(F+1)/2 second-order
+    P = 1 + F + (F * (F + 1)) // 2
 
-    # normalize features for numeric stability
-    mu    = logX.mean(axis=0)                                     # (4,)
-    sigma = logX.std(axis=0)                                      # (4,)
-    sigma[sigma < eps] = 1.0
+    # build design matrix
+    Phi = np.ones((N, P), dtype=float)
+    Phi[:, 1:1+F] = logX
+    idx = 1 + F
+    for i in range(F):
+        for j in range(i, F):
+            Phi[:, idx] = logX[:, i] * logX[:, j]
+            idx += 1
 
-    Z = (logX - mu) / sigma                                       # (N,4)
+    # ridge regularization for stability (no penalty on intercept)
+    ridge = 1e-8
+    A = Phi.T.dot(Phi)
+    # add ridge to diagonal
+    A += ridge * np.eye(P)
+    # remove ridge penalty from intercept term
+    A[0, 0] -= ridge
 
-    # build design matrix [1, z1, z2, z3, z4]
-    ones = np.ones((N, 1), dtype=np.float64)
-    D = np.hstack([ones, Z])                                      # (N,5)
-
-    # ridge regularization (do not penalize intercept)
-    lam = 1e-3
-    P = F + 1
-    I = np.eye(P, dtype=np.float64)
-    I[0, 0] = 0.0
-
-    # normal equations: (D^T D + λI) p_z = D^T logy
-    A = D.T.dot(D) + lam * I                                      # (5,5)
-    b = D.T.dot(logy)                                             # (5,)
-
-    # solve for normalized-parameter vector p_z = [p0, p1, ..., p4]
-    p_z = np.linalg.solve(A, b)                                   # (5,)
-
-    # convert back to original weights: w_i = p_z[i+1] / sigma[i]
-    weights = p_z[1:] / sigma                                     # (4,)
-    # intercept adjustment: p_z[0] - Σ_i (w_i * mu_i)
-    intercept = p_z[0] - np.dot(weights, mu)
-
-    # pack params for scaling_law_func
-    params = np.empty(F + 1, dtype=np.float64)
-    params[0]  = intercept
-    params[1:] = weights
-
+    b = Phi.T.dot(logy)
+    # solve normal equations
+    params = np.linalg.solve(A, b)
     return params
+# EVOLVE-BLOCK-END

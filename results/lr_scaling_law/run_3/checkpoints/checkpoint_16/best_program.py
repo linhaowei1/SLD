@@ -1,133 +1,128 @@
-import numpy as np
-
 # EVOLVE-BLOCK-START
+"""
+Enhanced scaling law model for LLM training hyperparameters.
+We fit a second‐order polynomial in the log‐domain of each feature,
+including quadratic terms and pairwise interactions, via ridge‐regularized
+closed‐form regression for stability, efficiency, and improved accuracy.
+
+Model form:
+   log(y_pred) = c0
+               + sum_i c1_i * log(x_i)
+               + sum_i c2_i * (log(x_i))^2
+               + sum_{i<j} c3_{ij} * log(x_i)*log(x_j)
+
+where x = [lr, bsz, data_size, non_embedding_param_size],
+and y_pred is the predicted LM loss.
+"""
+import numpy as np
 
 def scaling_law_func(data_points, params):
     """
-    Predicts LM loss from hyperparameters via an extended multiplicative 
-    power‐law model with two key interaction terms:
-        log(loss) ≈ intercept 
-                     + w_lr * log(lr) 
-                     + w_bsz * log(bsz)
-                     + w_data * log(data_size)
-                     + w_param * log(non_embedding_param_size)
-                     + w_lr_bsz * [log(lr) * log(bsz)]
-                     + w_data_param * [log(data_size) * log(non_embedding_param_size)]
-    Returns loss = exp(log_pred).
-    Inputs:
-      data_points: array of shape (N,4)
-      params:       array of shape (7,)
-                    [intercept,
-                     w_lr, w_bsz, w_data, w_param,
-                     w_lr_bsz, w_data_param]
+    Predict language‐model loss from hyperparameters via a 2nd‐order log‐polynomial.
+
+    Args:
+      data_points: array‐like of shape (N,4) with columns
+                   [lr, bsz, data_size, non_embedding_param_size]
+      params:      1D array of length 15:
+                   [c0,
+                    c1_lr, c1_bsz, c1_data, c1_param,
+                    c2_lr, c2_bsz, c2_data, c2_param,
+                    c3_lr_bsz, c3_lr_data, c3_lr_param,
+                    c3_bsz_data, c3_bsz_param, c3_data_param]
+
     Returns:
-      preds: array of shape (N,) of predicted LM losses
+      y_pred:      1D array of length N of predicted losses.
     """
-    X = np.atleast_2d(np.asarray(data_points, dtype=np.float64))
-    # avoid zero or negative input to log
-    eps = 1e-12
-    X = np.maximum(X, eps)
-    # extract columns
-    lr = X[:, 0]
-    bsz = X[:, 1]
-    data_size = X[:, 2]
-    param_size = X[:, 3]
+    X = np.asarray(data_points, float)
+    if X.ndim == 1:
+        X = X.reshape(1, -1)
+    N, F = X.shape
+    if F != 4:
+        raise ValueError(f"Expected input with 4 features, got {F}")
 
-    # compute logs
-    log_lr = np.log(lr)
-    log_bsz = np.log(bsz)
-    log_data = np.log(data_size)
-    log_param = np.log(param_size)
+    p = np.asarray(params, float).ravel()
+    # total parameters = 1 intercept + 4 linear + 4 quadratic + 6 interactions = 15
+    P_expected = 1 + F + F + (F*(F-1))//2
+    if p.shape[0] != P_expected:
+        raise ValueError(f"Expected {P_expected} parameters, got {p.shape[0]}")
 
-    # interactions
-    inter_lr_bsz = log_lr * log_bsz
-    inter_data_param = log_data * log_param
+    # floor inputs to avoid log(0)
+    X_clipped = np.maximum(X, 1e-12)
+    logX = np.log(X_clipped)        # shape (N,4)
 
-    # unpack params
-    intercept     = params[0]
-    w_lr          = params[1]
-    w_bsz         = params[2]
-    w_data        = params[3]
-    w_param       = params[4]
-    w_lr_bsz      = params[5]
-    w_data_param  = params[6]
+    # build design matrix Phi
+    Phi = np.ones((N, P_expected), float)
+    # linear terms
+    idx = 1
+    Phi[:, idx:idx+F] = logX
+    idx += F
+    # quadratic terms
+    Phi[:, idx:idx+F] = logX**2
+    idx += F
+    # pairwise interactions
+    for i in range(F):
+        for j in range(i+1, F):
+            Phi[:, idx] = logX[:, i] * logX[:, j]
+            idx += 1
 
-    # linear combination in log-space
-    log_pred = (intercept
-                + w_lr * log_lr
-                + w_bsz * log_bsz
-                + w_data * log_data
-                + w_param * log_param
-                + w_lr_bsz * inter_lr_bsz
-                + w_data_param * inter_data_param)
-
-    # back to original scale
+    # predict in log‐domain and exponentiate
+    log_pred = Phi.dot(p)           # shape (N,)
     return np.exp(log_pred)
 
 
 def fit_scaling_law(data_points, loss_values):
     """
-    Fits the extended power‐law model by ridge-regression in log-space 
-    with two interaction terms.
-    Builds a design matrix:
-      [1,
-       log(lr), log(bsz), log(data_size), log(param_size),
-       log(lr)*log(bsz), log(data_size)*log(param_size)]
-    and solves (X^T X + λI) p = X^T y for p in log-loss space.
-    Inputs:
-      data_points: array of shape (N,4)
-      loss_values: array of shape (N,)
+    Fit the 2nd‐order log‐polynomial scaling law via ridge‐regularized regression.
+
+    Args:
+      data_points: array‐like of shape (N,4)
+      loss_values: array‐like of shape (N,)
+
     Returns:
-      params: array of shape (7,) = 
-              [intercept, w_lr, w_bsz, w_data, w_param, w_lr_bsz, w_data_param]
+      params:      1D array of length 15 of fitted coefficients.
     """
-    X = np.atleast_2d(np.asarray(data_points, dtype=np.float64))
-    y = np.asarray(loss_values, dtype=np.float64)
+    X = np.asarray(data_points, float)
+    if X.ndim == 1:
+        X = X.reshape(1, -1)
+    y = np.asarray(loss_values, float).ravel()
+    N, F = X.shape
+    if F != 4:
+        raise ValueError(f"Expected data_points with 4 features, got {F}")
+    if y.shape[0] != N:
+        raise ValueError("Number of data points and loss values must match")
 
-    # avoid zeros
-    eps = 1e-12
-    X = np.maximum(X, eps)
-    y = np.maximum(y, eps)
+    # floor to avoid log(0)
+    X_clipped = np.maximum(X, 1e-12)
+    y_clipped = np.maximum(y, 1e-12)
 
-    # logs
-    log_lr    = np.log(X[:, 0])
-    log_bsz   = np.log(X[:, 1])
-    log_data  = np.log(X[:, 2])
-    log_param = np.log(X[:, 3])
+    # log‐transform
+    logX = np.log(X_clipped)        # shape (N,4)
+    logy = np.log(y_clipped)        # shape (N,)
 
-    # interactions
-    inter_lr_bsz     = log_lr * log_bsz
-    inter_data_param = log_data * log_param
+    # build design matrix Phi
+    P = 1 + F + F + (F*(F-1))//2     # 15
+    Phi = np.ones((N, P), float)
+    idx = 1
+    # linear
+    Phi[:, idx:idx+F] = logX
+    idx += F
+    # quadratic
+    Phi[:, idx:idx+F] = logX**2
+    idx += F
+    # pairwise interactions
+    for i in range(F):
+        for j in range(i+1, F):
+            Phi[:, idx] = logX[:, i] * logX[:, j]
+            idx += 1
 
-    # build design matrix: shape (N,7)
-    N = X.shape[0]
-    ones = np.ones((N, 1), dtype=np.float64)
-    design = np.column_stack([
-        ones,
-        log_lr[:, None],
-        log_bsz[:, None],
-        log_data[:, None],
-        log_param[:, None],
-        inter_lr_bsz[:, None],
-        inter_data_param[:, None]
-    ])
-
-    # target in log-space
-    logy = np.log(y)
-
-    # ridge regularization (do not penalize intercept)
-    dim = design.shape[1]
-    lambda_reg = 1e-3
-    I = np.eye(dim, dtype=np.float64)
-    I[0, 0] = 0.0
-
-    # normal equations
-    A = design.T.dot(design) + lambda_reg * I
-    b = design.T.dot(logy)
+    # ridge‐regularized normal equations
+    ridge = 1e-6
+    A = Phi.T.dot(Phi)
+    # apply ridge only to non‐intercept terms
+    A[np.arange(1, P), np.arange(1, P)] += ridge
+    b = Phi.T.dot(logy)
 
     # solve for parameters
     params = np.linalg.solve(A, b)
-
     return params
-
 # EVOLVE-BLOCK-END

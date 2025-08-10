@@ -1,97 +1,76 @@
+# EVOLVE-BLOCK-START
 import numpy as np
 
 def scaling_law_func(data_points, params):
     """
-    Predicts LM loss from hyperparameters via a multiplicative power‐law model:
-        loss ≈ exp(intercept + Σ_i w_i * log(x_i))
-    where x = [lr, bsz, data_size, non_embedding_param_size].
-
-    Inputs:
-      data_points: array of shape (N,4)
-      params:       array of shape (5,) = [intercept, w_lr, w_bsz, w_data, w_param]
-
-    Returns:
-      preds: array of shape (N,) of predicted LM losses
+    Quadratic‐in‐log scaling law:
+      Loss = exp( θ0 
+                  + sum_i θ1_i * log(x_i)
+                  + sum_i θ2_i * (log(x_i))^2 )
+    where x_i ∈ {lr, bsz, data_size, non_embed_param_size}.
+    params: length = 1 + 2*4 = 9
+      [θ0, θ1_lr, θ1_bsz, θ1_data, θ1_param,
+           θ2_lr, θ2_bsz, θ2_data, θ2_param]
     """
-    X = np.atleast_2d(np.asarray(data_points, dtype=np.float64))  # (N,4)
-    # clip to avoid log(0)
+    X = np.asarray(data_points, dtype=np.float64)
+    if X.ndim == 1:
+        X = X[None, :]
+    N, F = X.shape
+    if F != 4:
+        raise ValueError(f"Expected 4 features, got {F}")
+    p = np.asarray(params, dtype=np.float64).ravel()
+    expected_len = 1 + 2 * F
+    if p.size != expected_len:
+        raise ValueError(f"Expected params of length {expected_len}, got {p.size}")
+    theta0 = p[0]
+    lin_coeffs = p[1:1+F]
+    quad_coeffs = p[1+F:1+2*F]
+
+    # numerical stability
     eps = 1e-12
-    X = np.maximum(X, eps)
-    logX = np.log(X)                                             # (N,4)
-
-    intercept = float(params[0])                                 # scalar
-    weights   = np.asarray(params[1:], dtype=np.float64)         # (4,)
-
-    # linear model in log-space
-    log_pred = intercept + logX.dot(weights)                     # (N,)
-
-    # numerical stability: clip log_pred to avoid overflow/underflow
-    log_pred = np.clip(log_pred, -50.0, 50.0)
-
-    # map back to original scale
-    preds = np.exp(log_pred)                                     # (N,)
-    return preds
+    logs = np.log(X + eps)
+    log_pred = theta0 \
+               + logs.dot(lin_coeffs) \
+               + (logs**2).dot(quad_coeffs)
+    return np.exp(log_pred)
 
 
 def fit_scaling_law(data_points, loss_values):
     """
-    Fits the power‐law model by linear regression in log-space with feature
-    normalization and ridge regularization:
-        log(loss) ≈ intercept + Σ_i w_i * log(x_i)
-
-    Inputs:
-      data_points: array of shape (N,4)
-      loss_values: array of shape (N,)
-
-    Returns:
-      params: array of shape (5,) = [intercept, w_lr, w_bsz, w_data, w_param]
+    Fit the 9 parameters by least‐squares on log(Loss):
+      log(y) ≃ θ0 
+               + sum_i θ1_i log(x_i)
+               + sum_i θ2_i (log(x_i))^2
+    Returns the parameter vector of length 9.
     """
-    X = np.atleast_2d(np.asarray(data_points, dtype=np.float64))  # (N,4)
-    y = np.asarray(loss_values, dtype=np.float64)                 # (N,)
+    X = np.asarray(data_points, dtype=np.float64)
+    if X.ndim == 1:
+        X = X[None, :]
+    y = np.asarray(loss_values, dtype=np.float64).ravel()
+    N, F = X.shape
+    if F != 4:
+        raise ValueError(f"Expected 4 features, got {F}")
+    if y.shape[0] != N:
+        raise ValueError("Number of data points and losses must match")
 
-    # clip to avoid log(0)
+    # Build design matrix with intercept, log, and log^2 terms
     eps = 1e-12
-    X = np.maximum(X, eps)
-    y = np.maximum(y, eps)
+    logs = np.log(X + eps)            # (N,4)
+    logs2 = logs**2                   # (N,4)
+    A = np.concatenate([
+        np.ones((N, 1), dtype=np.float64),
+        logs,
+        logs2
+    ], axis=1)                        # (N, 1+4+4)
 
-    # take logs
-    logX = np.log(X)                                              # (N,4)
-    logy = np.log(y)                                              # (N,)
+    y_log = np.log(y + eps)
 
-    N, F = logX.shape   # F should be 4
+    # Regularized normal equations: (A^T A + λI) θ = A^T y_log
+    lam = 1e-6
+    ATA = A.T.dot(A)
+    ATA_reg = ATA + lam * np.eye(ATA.shape[0])
+    ATy = A.T.dot(y_log)
 
-    # normalize features for numeric stability
-    mu    = logX.mean(axis=0)                                     # (4,)
-    sigma = logX.std(axis=0)                                      # (4,)
-    sigma[sigma < eps] = 1.0
-
-    Z = (logX - mu) / sigma                                       # (N,4)
-
-    # build design matrix [1, z1, z2, z3, z4]
-    ones = np.ones((N, 1), dtype=np.float64)
-    D = np.hstack([ones, Z])                                      # (N,5)
-
-    # ridge regularization (do not penalize intercept)
-    lam = 1e-3
-    P = F + 1
-    I = np.eye(P, dtype=np.float64)
-    I[0, 0] = 0.0
-
-    # normal equations: (D^T D + λI) p_z = D^T logy
-    A = D.T.dot(D) + lam * I                                      # (5,5)
-    b = D.T.dot(logy)                                             # (5,)
-
-    # solve for normalized-parameter vector p_z = [p0, p1, ..., p4]
-    p_z = np.linalg.solve(A, b)                                   # (5,)
-
-    # convert back to original weights: w_i = p_z[i+1] / sigma[i]
-    weights = p_z[1:] / sigma                                     # (4,)
-    # intercept adjustment: p_z[0] - Σ_i (w_i * mu_i)
-    intercept = p_z[0] - np.dot(weights, mu)
-
-    # pack params for scaling_law_func
-    params = np.empty(F + 1, dtype=np.float64)
-    params[0]  = intercept
-    params[1:] = weights
-
-    return params
+    theta = np.linalg.solve(ATA_reg, ATy)
+    return theta
+# EVOLVE-BLOCK-END

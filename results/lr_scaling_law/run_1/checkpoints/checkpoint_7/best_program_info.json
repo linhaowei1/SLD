@@ -1,15 +1,15 @@
 {
-  "id": "1378f8d4-b223-4415-9b7d-67174decbbea",
-  "generation": 0,
-  "iteration": 0,
+  "id": "c0b9b3f5-b6e6-47da-b1a2-76142e24958b",
+  "generation": 1,
+  "iteration": 4,
   "current_iteration": 7,
   "metrics": {
-    "nmse": 5.42512111103884e+23,
-    "nmae": 755534900566.116,
-    "r2": -5.42512111103884e+23,
-    "combined_score": 1.8432768219040055e-24
+    "nmse": 65.34761150152974,
+    "nmae": 10.735191412974888,
+    "r2": -64.34761150152974,
+    "combined_score": 0.01507213262646152
   },
   "language": "python",
-  "timestamp": 1754716914.2225633,
-  "saved_at": 1754716959.962261
+  "timestamp": 1754803642.929268,
+  "saved_at": 1754803658.9760394
 }

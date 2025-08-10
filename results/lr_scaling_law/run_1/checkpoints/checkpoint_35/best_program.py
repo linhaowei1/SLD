@@ -1,91 +1,107 @@
 import numpy as np
 
+# EVOLVE-BLOCK-START
+# Pre‐defined log‐ranges for normalization (from problem description)
+_LOG_MIN = np.log(np.array([
+    1.2e-4,   # lr
+    16.0,     # bsz
+    4e9,      # data_size
+    2.14e8    # non_embedding_param_size
+], dtype=np.float64))
+
+_LOG_MAX = np.log(np.array([
+    2.2e-2,   # lr
+    4096.0,   # bsz
+    1e11,     # data_size
+    1e9       # non_embedding_param_size
+], dtype=np.float64))
+
+# Compute normalization constants
+_LOG_MEAN  = 0.5 * (_LOG_MIN + _LOG_MAX)
+_LOG_SCALE = 0.5 * (_LOG_MAX - _LOG_MIN)
+
+def _build_design_matrix(X):
+    """
+    Build a polynomial design matrix on normalized log‐features:
+      z = (log(X) - mean) / scale
+    Features: [1,
+               z1, z2, z3, z4,
+               z1^2, z2^2, z3^2, z4^2,
+               z1*z2, z1*z3, z1*z4,
+               z2*z3, z2*z4, z3*z4]
+    Returns A with shape (N,15).
+    """
+    eps = 1e-12
+    logs = np.log(X + eps)                    # (N,4)
+    z = (logs - _LOG_MEAN) / _LOG_SCALE        # normalize to ~[-1,1]
+    N = X.shape[0]
+    # intercept
+    feats = [np.ones(N, dtype=np.float64)]
+    # linear terms
+    feats += [z[:, i] for i in range(4)]
+    # quadratic terms
+    feats += [z[:, i] * z[:, i] for i in range(4)]
+    # pairwise interactions
+    for i in range(4):
+        for j in range(i + 1, 4):
+            feats.append(z[:, i] * z[:, j])
+    return np.column_stack(feats)             # (N,15)
+
+
 def scaling_law_func(data_points, params):
     """
-    Predicts LM loss from hyperparameters via an extended multiplicative power‐law model:
-      log(loss) ≈ intercept + Σ_i w_i * log(x_i) + Σ_i v_i * (log(x_i))^2
-    where x = [lr, bsz, data_size, non_embedding_param_size].
-    
+    Predict language‐model loss via a 2nd‐degree polynomial in normalized log‐features.
     Inputs:
-      data_points: array of shape (N,4)
-      params:       array of shape (1 + 4 + 4,) = [intercept, w1..w4, v1..v4]
-                    or shape (T, 9) for multi‐target
-    Returns:
-      preds: array of shape (N,) (or (N,T) if multi‐target)
+      data_points: array‐like of shape (N,4) columns [lr, bsz, data_size, non_embed_params]
+      params:      array‐like of length 15
+    Output:
+      preds: (N,) predicted losses
     """
-    X = np.atleast_2d(np.asarray(data_points, dtype=np.float64))
-    eps = 1e-12
-    # avoid log(0)
-    X = np.maximum(X, eps)
-    # compute log‐features
-    logX = np.log(X)                     # (N,4)
-    lin = logX                          # (N,4)
-    quad = logX * logX                  # (N,4)
-    
-    N, F = logX.shape                   # F == 4
-    # assemble design matrix Z = [1, lin, quad]
-    Z = np.concatenate([np.ones((N,1), dtype=np.float64), lin, quad], axis=1)  # (N,9)
-    
-    theta = np.asarray(params, dtype=np.float64)
-    # support multi‐target: ensure shape (T,P)
-    if theta.ndim == 1:
-        theta = theta[None, :]
-    T, P = theta.shape
-    if P != 1 + 2*F:
-        raise ValueError(f"Expected parameter length {1+2*F}, got {P}")
-    
-    # predictive log‐loss, then exponentiate
-    pred_log = Z.dot(theta.T)           # (N,T)
-    pred = np.exp(pred_log)             # (N,T)
-    
-    # flatten if single‐target
-    return pred.ravel() if T == 1 else pred
+    X = np.asarray(data_points, dtype=np.float64)
+    if X.ndim == 1:
+        X = X[None, :]
+    if X.shape[1] != 4:
+        raise ValueError(f"Expected 4 features, got {X.shape[1]}")
+    theta = np.asarray(params, dtype=np.float64).ravel()
+    if theta.size != 15:
+        raise ValueError(f"Expected 15 parameters, got {theta.size}")
+    A = _build_design_matrix(X)               # (N,15)
+    log_pred = A.dot(theta)                   # (N,)
+    return np.exp(log_pred)
 
 
 def fit_scaling_law(data_points, loss_values):
     """
-    Fits the extended power‐law model by ridge‐regularized linear regression
-    in log‐space with quadratic terms:
-      log(loss) ≈ intercept + Σ_i w_i * log(x_i) + Σ_i v_i * (log(x_i))^2
-    
-    Returns params of shape (1 + 4 + 4,) = [intercept, w1..w4, v1..v4].
+    Fit the 15‐parameter polynomial scaling law via ridge‐regularized least squares
+    on the log‐transformed loss:
+      minimize ||A θ − log(y)||^2 + λ ||θ_{1:}||^2
+    (No penalty on the intercept θ0.)
+    Inputs:
+      data_points: (N,4) array
+      loss_values: (N,)   array of observed losses
+    Output:
+      theta_opt: (15,) optimized parameter vector
     """
-    X = np.atleast_2d(np.asarray(data_points, dtype=np.float64))
-    y = np.asarray(loss_values, dtype=np.float64)
-    # avoid zeros
+    X = np.asarray(data_points, dtype=np.float64)
+    if X.ndim == 1:
+        X = X[None, :]
+    y = np.asarray(loss_values, dtype=np.float64).ravel()
+    if X.shape[0] != y.shape[0]:
+        raise ValueError("Number of data points and losses must match")
+
+    A = _build_design_matrix(X)               # (N,15)
     eps = 1e-12
-    X = np.maximum(X, eps)
-    y = np.maximum(y, eps)
-    
-    logX = np.log(X)                    # (N,4)
-    logy = np.log(y)                    # (N,)
-    N, F = logX.shape                   # F == 4
-    
-    # design matrix Z = [1, logX, logX^2]
-    lin = logX
-    quad = logX * logX
-    Z = np.concatenate([np.ones((N,1), dtype=np.float64), lin, quad], axis=1)  # (N,1+2F)
-    P = Z.shape[1]
-    
-    # set up ridge regularization: no penalty on intercept,
-    # small λ on linear terms, slightly larger on quadratic
-    lambda_lin = 1e-6
-    lambda_quad = 1e-4
-    reg = np.zeros((P, P), dtype=np.float64)
-    # indices 1..F  ← λ_lin
-    for i in range(1, 1+F):
-        reg[i, i] = lambda_lin
-    # indices (1+F)..(1+2F-1)  ← λ_quad
-    for i in range(1+F, P):
-        reg[i, i] = lambda_quad
-    
-    # normal equations: (Z^T Z + reg) θ = Z^T logy
-    A = Z.T.dot(Z) + reg
-    b = Z.T.dot(logy)
-    try:
-        theta = np.linalg.solve(A, b)
-    except np.linalg.LinAlgError:
-        # fallback if singular
-        theta, *_ = np.linalg.lstsq(Z, logy, rcond=None)
-    
-    return theta
+    y_log = np.log(y + eps)
+
+    # ridge regularization
+    P = A.shape[1]                            # 15
+    lam = 1e-4                                # regularization strength
+    reg = lam * np.eye(P, dtype=np.float64)
+    reg[0, 0] = 0.0                          # no penalty on intercept
+
+    # solve (A^T A + reg) θ = A^T y_log
+    ATA = A.T.dot(A) + reg
+    ATy = A.T.dot(y_log)
+    theta_opt = np.linalg.solve(ATA, ATy)
+    return theta_opt
+# EVOLVE-BLOCK-END

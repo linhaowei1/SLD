@@ -1,79 +1,98 @@
+# EVOLVE-BLOCK-START
+"""
+Improved scaling‐law discovery for LLM training:
+We model log(loss) as a second‐order polynomial in the log of each feature
+(including squares and pairwise interactions) and fit via closed‐form ridge
+regression for numerical stability and parameter efficiency.
+"""
 import numpy as np
 
-# EVOLVE-BLOCK-START
 def scaling_law_func(data_points, params):
     """
-    Supports either
-      (a) a pure power‐law:    P = F+1  params  = [intercept, a1, …, aF]
-      (b) a quadratic log‐law: P = 2F+1 params = [intercept, a1…aF, b1…bF]
-    where F = number of hyperparameters (here 4).
+    Predict language‐model loss from hyperparameters via a log‐domain polynomial.
+
+    Args:
+      data_points: array of shape (N,4) with columns
+                   [lr, bsz, data_size, non_embedding_param_size]
+      params:      1D array of length P = 1 + F + F*(F+1)/2 where F=4
+                   = 1 (intercept)
+                     + 4 (main effects)
+                     + 10 (4 squares + 6 pairwise products)
+    Returns:
+      preds: array of shape (N,) of predicted loss values.
     """
     X = np.asarray(data_points, dtype=float)
-    eps = 1e-12
-    N, F = X.shape
+    # avoid log(0)
+    X = np.maximum(X, 1e-12)
+    logX = np.log(X)                # shape (N,4)
+    N, F = logX.shape
 
-    # log‐transform
-    logX = np.log(X + eps)               # (N, F)
+    p = np.asarray(params, dtype=float).ravel()
+    # expected number of parameters
+    P_expected = 1 + F + (F * (F + 1)) // 2
+    if p.size != P_expected:
+        raise ValueError(f"Expected {P_expected} parameters, got {p.size}")
 
-    theta = np.asarray(params, dtype=float)
-    # promote to 2D for multi‐target
-    if theta.ndim == 1:
-        theta = theta[None, :]
-    M, P = theta.shape
+    # build design matrix Phi
+    Phi = np.ones((N, P_expected), dtype=float)
+    # main effects
+    Phi[:, 1:1+F] = logX
+    # second-order terms: squares and pairwise interactions
+    idx = 1 + F
+    for i in range(F):
+        for j in range(i, F):
+            Phi[:, idx] = logX[:, i] * logX[:, j]
+            idx += 1
 
-    # choose design matrix by parameter length
-    if P == F + 1:
-        # pure power‐law
-        Z = np.concatenate([np.ones((N, 1)), logX], axis=1)           # (N, F+1)
-    elif P == 2*F + 1:
-        # quadratic in log‐space
-        Z = np.concatenate([np.ones((N, 1)), logX, logX**2], axis=1)  # (N, 1+F+F)
-    else:
-        raise ValueError(f"Expected params of length {F+1} or {2*F+1}, got {P}")
-
-    # linear model in log‐space → exponentiate
-    pred_log = Z.dot(theta.T)    # (N, M)
-    pred     = np.exp(pred_log)  # (N, M)
-
-    return pred.ravel() if M == 1 else pred
+    # linear model in log-domain
+    log_pred = Phi.dot(p)
+    # back to original scale
+    return np.exp(log_pred)
 
 
 def fit_scaling_law(data_points, loss_values):
     """
-    Always fits the quadratic log‐law:
-       log(loss) ≈ intercept + Σ a_i·log(x_i) + Σ b_i·[log(x_i)]^2
-    via ridge‐regularized least squares in log‐space.
+    Fit the log‐domain polynomial scaling law via ridge regression.
+
+    Args:
+      data_points: array of shape (N,4)
+      loss_values: array of shape (N,)
+    Returns:
+      params: 1D array of learned parameters of length P = 15
     """
     X = np.asarray(data_points, dtype=float)
     y = np.asarray(loss_values, dtype=float)
-    N, F = X.shape
-    eps = 1e-12
 
-    # log‐space features
-    logX = np.log(X + eps)                         # (N, F)
-    Z    = np.concatenate([np.ones((N,1)), 
-                           logX, 
-                           logX**2], axis=1)      # (N, 1 + F + F)
-    P    = Z.shape[1]
+    # floor inputs and outputs to avoid log(0)
+    X = np.maximum(X, 1e-12)
+    y = np.maximum(y, 1e-12)
 
-    # small ridge penalty (no penalty on intercept)
-    lambda_reg = 1e-3
-    reg        = np.eye(P)
-    reg[0,0]   = 0
-    A          = Z.T.dot(Z) + lambda_reg*reg       # (P, P)
+    logX = np.log(X)   # shape (N,4)
+    logy = np.log(y)   # shape (N,)
 
-    # support multi‐target y
-    if y.ndim == 1:
-        y2d = y[:,None]
-    else:
-        y2d = y
-    T = y2d.shape[1]
+    N, F = logX.shape
+    # total parameters: intercept + F main + F*(F+1)/2 second-order
+    P = 1 + F + (F * (F + 1)) // 2
 
-    params = np.zeros((T, P), dtype=float)
-    for t in range(T):
-        logy       = np.log(y2d[:,t] + eps)        # (N,)
-        b          = Z.T.dot(logy)                 # (P,)
-        params[t]  = np.linalg.solve(A, b)
+    # build design matrix
+    Phi = np.ones((N, P), dtype=float)
+    Phi[:, 1:1+F] = logX
+    idx = 1 + F
+    for i in range(F):
+        for j in range(i, F):
+            Phi[:, idx] = logX[:, i] * logX[:, j]
+            idx += 1
 
-    return params[0] if T == 1 else params
+    # ridge regularization for stability (no penalty on intercept)
+    ridge = 1e-8
+    A = Phi.T.dot(Phi)
+    # add ridge to diagonal
+    A += ridge * np.eye(P)
+    # remove ridge penalty from intercept term
+    A[0, 0] -= ridge
+
+    b = Phi.T.dot(logy)
+    # solve normal equations
+    params = np.linalg.solve(A, b)
+    return params
 # EVOLVE-BLOCK-END

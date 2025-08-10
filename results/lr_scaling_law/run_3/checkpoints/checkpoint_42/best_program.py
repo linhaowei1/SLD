@@ -1,155 +1,95 @@
 import numpy as np
-from scipy.optimize import least_squares
 
-# EVOLVE-BLOCK-START
-"""
-Enhanced scaling law: additive floor + extended log‐space regression with
-quadratic lr term and data‐param interaction.
-
-Model:
-  loss_pred = loss_floor + exp(
-      intercept
-      + w_lr1 * log(lr)
-      + w_lr2 * (log(lr))^2
-      + w_bsz * log(bsz)
-      + w_data * log(data_size)
-      + w_param * log(non_embedding_param_size)
-      + w_cross * log(data_size) * log(non_embedding_param_size)
-  )
-
-Fitting:
-  1) Ridge‐regularized linear regression in augmented log‐space
-  2) Robust Huber least‐squares refinement on original loss‐space
-"""
 def scaling_law_func(data_points, params):
     """
-    data_points: (N,4) = [lr, bsz, data_size, non_embedding_param_size]
-    params: (8,) = [
-      loss_floor,
-      intercept,
-      w_lr1, w_lr2,
-      w_bsz,
-      w_data,
-      w_param,
-      w_cross
-    ]
-    returns: (N,) predicted loss
+    Predict language‐model loss from hyperparameters via a simplified
+    2nd‐order log‐polynomial with one cross‐interaction.
+
+    Model form in the log‐domain:
+      log(y_pred) = p0
+                  + p1*L_lr   + p2*L_bsz   + p3*L_data   + p4*L_param
+                  + p5*L_lr^2 + p6*L_bsz^2 + p7*L_data^2 + p8*L_param^2
+                  + p9*(L_data * L_param)
+
+    where L_x = log(x), and x = [lr, bsz, data_size, non_embedding_param_size].
     """
-    X = np.atleast_2d(np.asarray(data_points, dtype=np.float64))
-    # clamp to avoid log(0)
-    eps = 1e-12
-    X = np.maximum(X, eps)
+    X = np.asarray(data_points, dtype=float)
+    if X.ndim == 1:
+        X = X.reshape(1, -1)
+    N, F = X.shape
+    if F != 4:
+        raise ValueError(f"Expected input with 4 features, got {F}")
+    p = np.asarray(params, dtype=float).ravel()
+    P_expected = 10
+    if p.shape[0] != P_expected:
+        raise ValueError(f"Expected {P_expected} parameters, got {p.shape[0]}")
 
-    # unpack
-    loss_floor = params[0]
-    intercept  = params[1]
-    w_lr1, w_lr2, w_bsz, w_data, w_param, w_cross = params[2:]
+    # avoid log(0)
+    X_clipped = np.maximum(X, 1e-12)
+    logX = np.log(X_clipped)
+    L_lr    = logX[:, 0]
+    L_bsz   = logX[:, 1]
+    L_data  = logX[:, 2]
+    L_param = logX[:, 3]
 
-    # compute logs
-    log_lr    = np.log(X[:, 0])
-    log_bsz   = np.log(X[:, 1])
-    log_data  = np.log(X[:, 2])
-    log_param = np.log(X[:, 3])
+    # build design matrix Phi (N x 10)
+    # [1, L_lr, L_bsz, L_data, L_param, L_lr^2, L_bsz^2, L_data^2, L_param^2, L_data*L_param]
+    Phi = np.stack([
+        np.ones(N),
+        L_lr, L_bsz, L_data, L_param,
+        L_lr**2, L_bsz**2, L_data**2, L_param**2,
+        L_data * L_param
+    ], axis=1)
 
-    # quadratic and interaction features
-    lr_quad    = log_lr * log_lr
-    data_param = log_data * log_param
-
-    lin_term = (
-        intercept
-        + w_lr1 * log_lr
-        + w_lr2 * lr_quad
-        + w_bsz * log_bsz
-        + w_data * log_data
-        + w_param * log_param
-        + w_cross * data_param
-    )
-    return loss_floor + np.exp(lin_term)
+    log_pred = Phi.dot(p)       # shape (N,)
+    return np.exp(log_pred)
 
 
 def fit_scaling_law(data_points, loss_values):
     """
-    Fit the extended scaling law.
-    Returns params of shape (8,).
+    Fit the simplified 2nd‐order log‐polynomial scaling law via
+    ridge‐regularized closed‐form regression.
     """
-    X = np.atleast_2d(np.asarray(data_points, dtype=np.float64))
-    y = np.asarray(loss_values, dtype=np.float64)
+    X = np.asarray(data_points, dtype=float)
+    if X.ndim == 1:
+        X = X.reshape(1, -1)
+    y = np.asarray(loss_values, dtype=float).ravel()
+
     N, F = X.shape
-    assert F == 4, "Expect 4 features per point"
+    if F != 4:
+        raise ValueError(f"Expected data_points with 4 features, got {F}")
+    if y.shape[0] != N:
+        raise ValueError("Number of data points and loss values must match")
 
-    # clamp
-    eps = 1e-12
-    X = np.maximum(X, eps)
-    y = np.maximum(y, eps)
+    # avoid log(0)
+    X_clipped = np.maximum(X, 1e-12)
+    y_clipped = np.maximum(y, 1e-12)
 
-    # build augmented log‐space design matrix
-    log_lr    = np.log(X[:, 0])
-    log_bsz   = np.log(X[:, 1])
-    log_data  = np.log(X[:, 2])
-    log_param = np.log(X[:, 3])
+    logX = np.log(X_clipped)
+    logy = np.log(y_clipped)
 
-    lr_quad    = log_lr * log_lr
-    data_param = log_data * log_param
+    L_lr    = logX[:, 0]
+    L_bsz   = logX[:, 1]
+    L_data  = logX[:, 2]
+    L_param = logX[:, 3]
 
-    # columns: [1, log_lr, lr_quad, log_bsz, log_data, log_param, data_param]
-    ones = np.ones((N, 1), dtype=np.float64)
-    design = np.hstack([
-        ones,
-        log_lr.reshape(-1, 1),
-        lr_quad.reshape(-1, 1),
-        log_bsz.reshape(-1, 1),
-        log_data.reshape(-1, 1),
-        log_param.reshape(-1, 1),
-        data_param.reshape(-1, 1)
-    ])  # shape (N,7)
+    # build design matrix Phi (N x 10)
+    Phi = np.stack([
+        np.ones(N),
+        L_lr, L_bsz, L_data, L_param,
+        L_lr**2, L_bsz**2, L_data**2, L_param**2,
+        L_data * L_param
+    ], axis=1)
 
-    # initial linear solve in log‐loss space
-    logy = np.log(y)
-    # ridge regularization (no penalty on intercept)
-    D = design.shape[1]
-    lambda_reg = 1e-6
-    I = np.eye(D, dtype=np.float64)
-    I[0, 0] = 0.0
-    A = design.T.dot(design) + lambda_reg * I
-    b = design.T.dot(logy)
-    try:
-        sol = np.linalg.solve(A, b)
-    except np.linalg.LinAlgError:
-        sol, *_ = np.linalg.lstsq(A, b, rcond=None)
+    # ridge‐regularized normal equations
+    P = Phi.shape[1]   # should be 10
+    ridge = 1e-6
+    A = Phi.T.dot(Phi)
+    # apply ridge on all terms except intercept
+    diag_idx = np.arange(1, P)
+    A[diag_idx, diag_idx] += ridge
+    b = Phi.T.dot(logy)
 
-    intercept0 = sol[0]
-    w_init     = sol[1:]  # length 6
-
-    # initial floor: half min(y)
-    loss_floor0 = max(0.0, 0.5 * np.min(y))
-
-    # pack initial params: [floor, intercept, w_lr1, w_lr2, w_bsz, w_data, w_param, w_cross]
-    p0 = np.concatenate(([loss_floor0, intercept0], w_init))
-
-    # bounds: loss_floor ∈ [0, min(y)], others unconstrained
-    lower = np.concatenate(([0.0, -np.inf], [-np.inf] * (D - 1)))
-    upper = np.concatenate(([np.min(y), np.inf], [np.inf] * (D - 1)))
-
-    # residual function in original space
-    def residuals(p):
-        return scaling_law_func(X, p) - y
-
-    # robust refinement
-    try:
-        res = least_squares(
-            residuals,
-            p0,
-            bounds=(lower, upper),
-            loss='huber',
-            f_scale=0.5,
-            xtol=1e-8,
-            ftol=1e-8,
-            gtol=1e-8,
-            max_nfev=5000
-        )
-        p_opt = res.x if res.success else p0
-    except Exception:
-        p_opt = p0
-
-    return p_opt
-# EVOLVE-BLOCK-END
+    # solve for parameters
+    params = np.linalg.solve(A, b)
+    return params

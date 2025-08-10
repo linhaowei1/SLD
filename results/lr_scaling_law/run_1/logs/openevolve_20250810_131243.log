@@ -1,0 +1,101 @@
+2025-08-10 13:12:43,597 - openevolve.controller - INFO - Logging to results/lr_scaling_law/run_1/logs/openevolve_20250810_131243.log
+2025-08-10 13:12:43,600 - openevolve.controller - INFO - Set random seed to 42 for reproducibility
+2025-08-10 13:12:43,626 - openevolve.llm.openai - INFO - Initialized OpenAI LLM with model: o4-mini
+2025-08-10 13:12:43,626 - openevolve.llm.ensemble - INFO - Initialized LLM ensemble with models: o4-mini (weight: 1.00)
+2025-08-10 13:12:43,641 - openevolve.prompt.sampler - INFO - Initialized prompt sampler
+2025-08-10 13:12:43,641 - openevolve.prompt.sampler - INFO - Set custom templates: system=evaluator_system_message, user=None
+2025-08-10 13:12:43,642 - openevolve.database - INFO - Initialized program database with 0 programs
+2025-08-10 13:12:43,642 - openevolve.evaluator - INFO - Successfully loaded evaluation function from evaluator.py
+2025-08-10 13:12:43,642 - openevolve.evaluator - INFO - Initialized evaluator with evaluator.py
+2025-08-10 13:12:43,642 - openevolve.controller - INFO - Initialized OpenEvolve with init_program.py
+2025-08-10 13:12:43,642 - openevolve.controller - INFO - Adding initial program to database
+2025-08-10 13:12:44,097 - openevolve.evaluator - INFO - Evaluated program 5fda119f-fa23-4857-886d-8e124b455066 in 0.46s: nmse=68641835630241626816321159168.0000, nmae=350621078612143.1875, r2=-68641835630241626816321159168.0000, combined_score=0.0000
+2025-08-10 13:12:44,098 - openevolve.database - INFO - New MAP-Elites cell occupied: {'combined_score': 25}
+2025-08-10 13:12:44,099 - openevolve.process_parallel - INFO - Initialized process parallel controller with 4 workers
+2025-08-10 13:12:44,099 - openevolve.process_parallel - INFO - Started process pool with 4 processes
+2025-08-10 13:12:44,099 - openevolve.controller - INFO - Using island-based evolution with 5 islands
+2025-08-10 13:12:44,099 - openevolve.database - INFO - Island Status:
+2025-08-10 13:12:44,099 - openevolve.database - INFO -  * Island 0: 1 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0 (best: 5fda119f-fa23-4857-886d-8e124b455066)
+2025-08-10 13:12:44,099 - openevolve.database - INFO -    Island 1: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 13:12:44,099 - openevolve.database - INFO -    Island 2: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 13:12:44,099 - openevolve.database - INFO -    Island 3: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 13:12:44,099 - openevolve.database - INFO -    Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 13:12:44,099 - openevolve.process_parallel - INFO - Starting process-based evolution from iteration 1 for 100 iterations (total: 101)
+2025-08-10 13:12:44,143 - openevolve.prompt.sampler - INFO - Set custom templates: system=evaluator_system_message, user=None
+2025-08-10 13:12:44,143 - openevolve.prompt.sampler - INFO - Set custom templates: system=evaluator_system_message, user=None
+2025-08-10 13:12:44,143 - openevolve.prompt.sampler - INFO - Set custom templates: system=evaluator_system_message, user=None
+2025-08-10 13:12:44,143 - openevolve.evaluator - INFO - Successfully loaded evaluation function from evaluator.py
+2025-08-10 13:12:44,144 - openevolve.evaluator - INFO - Initialized evaluator with evaluator.py
+2025-08-10 13:12:44,144 - openevolve.evaluator - INFO - Successfully loaded evaluation function from evaluator.py
+2025-08-10 13:12:44,144 - openevolve.evaluator - INFO - Successfully loaded evaluation function from evaluator.py
+2025-08-10 13:12:44,144 - openevolve.evaluator - INFO - Initialized evaluator with evaluator.py
+2025-08-10 13:12:44,144 - openevolve.evaluator - INFO - Initialized evaluator with evaluator.py
+2025-08-10 13:12:44,144 - openevolve.prompt.sampler - INFO - Set custom templates: system=evaluator_system_message, user=None
+2025-08-10 13:12:44,144 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 13:12:44,145 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 13:12:44,145 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 13:12:44,145 - openevolve.evaluator - INFO - Successfully loaded evaluation function from evaluator.py
+2025-08-10 13:12:44,145 - openevolve.evaluator - INFO - Initialized evaluator with evaluator.py
+2025-08-10 13:12:44,146 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 13:13:14,439 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 13:13:14,460 - openevolve.evaluator - INFO - Evaluated program ec198878-6bc2-45f4-bcb3-330830e8ab30 in 0.01s: nmse=112.9882, nmae=14.1284, r2=-111.9882, combined_score=0.0088
+2025-08-10 13:13:14,462 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 13:13:14,471 - openevolve.database - INFO - New MAP-Elites cell occupied: {'combined_score': 49}
+2025-08-10 13:13:14,471 - openevolve.database - INFO - New best program ec198878-6bc2-45f4-bcb3-330830e8ab30 replaces 5fda119f-fa23-4857-886d-8e124b455066 (combined_score: 0.0000 → 0.0088, +0.0088)
+2025-08-10 13:13:14,471 - openevolve.process_parallel - INFO - Iteration 3: Program ec198878-6bc2-45f4-bcb3-330830e8ab30 (parent: 5fda119f-fa23-4857-886d-8e124b455066) completed in 30.32s
+2025-08-10 13:13:14,471 - openevolve.process_parallel - INFO - Metrics: nmse=112.9882, nmae=14.1284, r2=-111.9882, combined_score=0.0088
+2025-08-10 13:13:14,471 - openevolve.process_parallel - INFO - 🌟 New best solution found at iteration 3: ec198878-6bc2-45f4-bcb3-330830e8ab30
+2025-08-10 13:13:14,472 - openevolve.process_parallel - INFO - Checkpoint interval reached at iteration 3
+2025-08-10 13:13:14,472 - openevolve.database - INFO - Island Status:
+2025-08-10 13:13:14,472 - openevolve.database - INFO -  * Island 0: 2 programs, best=0.0088, avg=0.0044, diversity=136.10, gen=1 (best: ec198878-6bc2-45f4-bcb3-330830e8ab30)
+2025-08-10 13:13:14,472 - openevolve.database - INFO -    Island 1: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 13:13:14,472 - openevolve.database - INFO -    Island 2: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 13:13:14,472 - openevolve.database - INFO -    Island 3: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 13:13:14,472 - openevolve.database - INFO -    Island 4: 0 programs, best=0.0000, avg=0.0000, diversity=0.00, gen=0
+2025-08-10 13:13:14,473 - openevolve.database - INFO - Saved database with 2 programs to results/lr_scaling_law/run_1/checkpoints/checkpoint_3
+2025-08-10 13:13:14,474 - openevolve.controller - INFO - Saved best program at checkpoint 3 with metrics: nmse=112.9882, nmae=14.1284, r2=-111.9882, combined_score=0.0088
+2025-08-10 13:13:14,474 - openevolve.controller - INFO - Saved checkpoint at iteration 3 to results/lr_scaling_law/run_1/checkpoints/checkpoint_3
+2025-08-10 13:13:17,309 - openevolve.controller - INFO - Received signal 2, initiating graceful shutdown...
+2025-08-10 13:13:17,309 - openevolve.controller - INFO - Received signal 2, initiating graceful shutdown...
+2025-08-10 13:13:17,309 - openevolve.controller - INFO - Received signal 2, initiating graceful shutdown...
+2025-08-10 13:13:17,309 - openevolve.controller - INFO - Received signal 2, initiating graceful shutdown...
+2025-08-10 13:13:17,309 - openevolve.controller - INFO - Received signal 2, initiating graceful shutdown...
+2025-08-10 13:13:17,310 - openevolve.process_parallel - INFO - Graceful shutdown requested...
+2025-08-10 13:13:17,310 - openevolve.process_parallel - INFO - Graceful shutdown requested...
+2025-08-10 13:13:17,310 - openevolve.process_parallel - INFO - Graceful shutdown requested...
+2025-08-10 13:13:17,310 - openevolve.process_parallel - INFO - Graceful shutdown requested...
+2025-08-10 13:13:17,310 - openevolve.process_parallel - INFO - Graceful shutdown requested...
+2025-08-10 13:13:17,312 - openevolve.process_parallel - INFO - Shutdown requested, canceling remaining evaluations...
+2025-08-10 13:13:17,312 - openevolve.process_parallel - INFO - Evolution completed
+2025-08-10 13:13:17,312 - openevolve.controller - INFO - Evolution stopped due to shutdown request
+2025-08-10 13:13:17,453 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:17,453 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:17,453 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:17,453 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:17,453 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:17,623 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:17,623 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:17,623 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:17,623 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:17,623 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:17,626 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 13:13:17,628 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 13:13:17,629 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 13:13:17,629 - openevolve.llm.ensemble - INFO - Sampled model: o4-mini
+2025-08-10 13:13:17,742 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 13:13:17,794 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:17,794 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:17,794 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:17,794 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:17,794 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:17,973 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:17,973 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:17,973 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:17,973 - openevolve.controller - INFO - Force exit requested - terminating immediately
+2025-08-10 13:13:27,386 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 13:13:35,306 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 13:13:53,279 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 13:14:01,664 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 13:14:02,912 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 13:14:04,355 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-10 13:14:04,797 - httpx - INFO - HTTP Request: POST http://api.llm.wq/v1/chat/completions "HTTP/1.1 200 OK"

@@ -1,5 +1,5 @@
 # Configuration for learning rate scaling law discovery with OpenEvolve
-max_iterations: 50
+max_iterations: 200
 checkpoint_interval: 1
 log_level: "INFO"
 random_seed: 42
@@ -19,6 +19,8 @@ llm:
 prompt:
   system_message: |
     You are an expert in scaling laws and machine learning who specializes in discovering and improving scaling law functions for different LLM training scenarios. Your task is to evolve both the `scaling_law_func` function (currently a naive power law) and the `fit_scaling_law` optimization algorithm (currently a naive BFGS) to better model the relationship between learning rate, batch size, data size, model parameters and training loss.
+
+    You are allowed to decide the number of parameters in the scaling law function.
 
     Focus on mathematical accuracy across different hyperparameter scales, cross-configuration generalization, parameter efficiency (simple forms that can be fitted with limited data), and numerical/theoretical stability.
 
@@ -43,6 +45,10 @@ prompt:
         # data_size: Array of data sizes
         # non_embedding_param_size: Array of non-embedding parameter sizes
         # Returns: Predicted lm loss values
+        - Model parameters (N) range: ~214M to ~1B parameters
+        - Training tokens (D) range: 4B to 100B tokens
+        - Learning rates range: 1.2e-4 to 2.2e-2
+        - Batch sizes range: 16 to 4096
 
     def fit_scaling_law(data_points, loss_values):
         # data_points: (N,4) array with columns [lr, bsz, data_size, non_embedding_param_size]

@@ -1,97 +1,106 @@
-import numpy as np
-
 # EVOLVE-BLOCK-START
+"""
+Refined scaling‐law for LLM training:
+We model log(loss) as a hybrid polynomial in the log of each feature,
+including first‐order terms for lr and bsz, and both linear and quadratic
+terms plus their interaction for data_size (D) and non_embedding_param_size (P).
+This keeps the model compact (8 params) and regularizes heavily for better
+cross‐configuration generalization.
+"""
+import numpy as np
 
 def scaling_law_func(data_points, params):
     """
-    Full quadratic scaling law in log-space with cross-terms.
-    Features x = [lr, bsz, data_size, non_embedding_param_size].
+    Predict language‐model loss from hyperparameters via a tailored log‐domain model.
 
-    Model:
-      log(loss) = θ0
-                + Σ_i θ1+i       * log(x_i)
-                + Σ_i θ1+F+i     * [log(x_i)]^2
-                + Σ_{i<j} θ1+2F+idx(i,j) * log(x_i)*log(x_j)
-
-    Returns loss = exp(predicted_log_loss).
+    Args:
+      data_points: array of shape (N,4) with columns
+                   [lr, bsz, data_size (D), non_embedding_param_size (P)]
+      params:      1D array of length 8:
+                   [β0,
+                    β_lr, β_bsz, β_D, β_P,
+                    β_D2, β_P2, β_DP]
+    Returns:
+      preds: array of shape (N,) of predicted loss values.
     """
-    X = np.asarray(data_points, dtype=float)      # shape (N,4)
-    eps = 1e-12
-    logX = np.log(X + eps)                        # safe log
-    theta = np.asarray(params, dtype=float).ravel()
-    N, F = logX.shape
+    X = np.asarray(data_points, dtype=float)
+    # floor to avoid log(0)
+    X = np.maximum(X, 1e-12)
+    # split features
+    log_lr  = np.log(X[:, 0])
+    log_bsz = np.log(X[:, 1])
+    log_D   = np.log(X[:, 2])
+    log_P   = np.log(X[:, 3])
 
-    # Build design matrix Z column-wise:
-    cols = []
-    cols.append(np.ones(N))                       # intercept
-    # linear terms
-    for i in range(F):
-        cols.append(logX[:, i])
-    # quadratic terms
-    for i in range(F):
-        cols.append(logX[:, i]**2)
-    # cross terms
-    for i in range(F):
-        for j in range(i+1, F):
-            cols.append(logX[:, i] * logX[:, j])
+    p = np.asarray(params, dtype=float).ravel()
+    if p.size != 8:
+        raise ValueError(f"Expected 8 parameters, got {p.size}")
 
-    Z = np.stack(cols, axis=1)                    # shape (N, P)
-    if Z.shape[1] != theta.size:
-        raise ValueError(
-            f"Parameter count mismatch: got {theta.size} params, "
-            f"design matrix has {Z.shape[1]} columns."
-        )
+    # build compact design matrix Φ
+    # columns: [1, log_lr, log_bsz, log_D, log_P, (log_D)^2, (log_P)^2, log_D*log_P]
+    N = X.shape[0]
+    Phi = np.empty((N, 8), dtype=float)
+    Phi[:, 0] = 1.0
+    Phi[:, 1] = log_lr
+    Phi[:, 2] = log_bsz
+    Phi[:, 3] = log_D
+    Phi[:, 4] = log_P
+    Phi[:, 5] = log_D * log_D
+    Phi[:, 6] = log_P * log_P
+    Phi[:, 7] = log_D * log_P
 
-    pred_log = Z.dot(theta)
-    return np.exp(pred_log)
+    # linear model in log‐domain
+    log_pred = Phi.dot(p)
+    # back to original loss scale
+    return np.exp(log_pred)
 
 
 def fit_scaling_law(data_points, loss_values):
     """
-    Fit the full quadratic-in-log model via ridge‐regularized least squares.
+    Fit the tailored log‐domain scaling law via ridge‐regularized least squares.
 
-    Solves:
-      minimize_θ ||Z θ - log(y)||^2 + λ * ||θ_{1:}||^2
-      (no penalty on the intercept θ0).
-
-    Returns the fitted θ vector.
+    Args:
+      data_points: array of shape (N,4)
+      loss_values: array of shape (N,)
+    Returns:
+      params: 1D array of learned parameters of length 8
     """
     X = np.asarray(data_points, dtype=float)
     y = np.asarray(loss_values, dtype=float)
-    eps = 1e-12
 
-    # avoid log(0)
-    X = np.maximum(X, eps)
-    y = np.maximum(y, eps)
+    # floor to avoid log(0)
+    X = np.maximum(X, 1e-12)
+    y = np.maximum(y, 1e-12)
 
-    logX = np.log(X)
-    logy = np.log(y)
-    N, F = logX.shape
+    # log‐transform inputs and outputs
+    log_lr  = np.log(X[:, 0])
+    log_bsz = np.log(X[:, 1])
+    log_D   = np.log(X[:, 2])
+    log_P   = np.log(X[:, 3])
+    log_y   = np.log(y)
 
-    # Build the same design matrix Z as in scaling_law_func
-    cols = []
-    cols.append(np.ones(N))                       # intercept
-    for i in range(F):                            # linear
-        cols.append(logX[:, i])
-    for i in range(F):                            # quadratic
-        cols.append(logX[:, i]**2)
-    for i in range(F):                            # cross-terms
-        for j in range(i+1, F):
-            cols.append(logX[:, i] * logX[:, j])
+    N = X.shape[0]
+    # construct design matrix Φ (N×8)
+    Phi = np.empty((N, 8), dtype=float)
+    Phi[:, 0] = 1.0
+    Phi[:, 1] = log_lr
+    Phi[:, 2] = log_bsz
+    Phi[:, 3] = log_D
+    Phi[:, 4] = log_P
+    Phi[:, 5] = log_D * log_D
+    Phi[:, 6] = log_P * log_P
+    Phi[:, 7] = log_D * log_P
 
-    Z = np.stack(cols, axis=1)                    # shape (N, P)
-    P = Z.shape[1]
+    # ridge regularization for stability (penalize all but intercept)
+    ridge = 1e-6
+    A = Phi.T.dot(Phi)
+    # add ridge to diagonal entries except intercept index 0
+    diag_idx = np.arange(8)
+    A[diag_idx, diag_idx] += ridge
+    A[0, 0] -= ridge
 
-    # Ridge‐regularization matrix (no penalty on intercept)
-    lambda_reg = 1e-3
-    I = np.eye(P, dtype=float)
-    I[0, 0] = 0.0
-
-    # Solve (Z^T Z + λ I) θ = Z^T logy
-    A = Z.T.dot(Z) + lambda_reg * I
-    b = Z.T.dot(logy)
-    theta = np.linalg.solve(A, b)
-
-    return theta
-
+    b = Phi.T.dot(log_y)
+    # solve for parameters
+    params = np.linalg.solve(A, b)
+    return params
 # EVOLVE-BLOCK-END

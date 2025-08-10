@@ -1,79 +1,123 @@
 import numpy as np
 
-# EVOLVE-BLOCK-START
+# We work in log‐domain of each feature, then center to zero mean and scale to unit half‐range,
+# so logX_norm ≈ in [−1,1].  This reduces multicollinearity and yields numerically stable polynomials.
+
+# Precomputed log‐domain minima and maxima for each feature:
+#   [learning_rate, batch_size, data_size, non_embedding_param_size]
+_LOG_F_MIN = np.log(np.array([1.2e-4, 16.0, 4e9, 2.14e8], dtype=float))
+_LOG_F_MAX = np.log(np.array([2.2e-2, 4096.0, 1e11, 1e9], dtype=float))
+
+# Compute midpoints and half‐ranges in log‐domain
+_LOG_F_MID   = (_LOG_F_MIN + _LOG_F_MAX) * 0.5
+_LOG_F_HALF  = (_LOG_F_MAX - _LOG_F_MIN) * 0.5
+
+def _build_design_matrix(logX_norm):
+    """
+    Build design matrix for a 2nd‐order polynomial in the F=4 normalized log‐features:
+      - intercept
+      - F linear terms
+      - F squared terms
+      - F*(F-1)/2 pairwise products
+    Returns Phi of shape (N, 1 + F + F + F*(F-1)//2).
+    """
+    N, F = logX_norm.shape
+    P = 1 + F + F + (F*(F-1))//2
+    Phi = np.empty((N, P), dtype=float)
+    col = 0
+
+    # intercept
+    Phi[:, col] = 1.0
+    col += 1
+
+    # linear terms
+    Phi[:, col:col+F] = logX_norm
+    col += F
+
+    # squared terms
+    Phi[:, col:col+F] = logX_norm**2
+    col += F
+
+    # pairwise interaction terms
+    for i in range(F):
+        for j in range(i+1, F):
+            Phi[:, col] = logX_norm[:, i] * logX_norm[:, j]
+            col += 1
+
+    return Phi
+
 def scaling_law_func(data_points, params):
     """
-    Supports either
-      (a) a pure power‐law:    P = F+1  params  = [intercept, a1, …, aF]
-      (b) a quadratic log‐law: P = 2F+1 params = [intercept, a1…aF, b1…bF]
-    where F = number of hyperparameters (here 4).
+    Predict LM loss from hyperparameters via a zero‐centered, scaled,
+    2nd‐order polynomial in log‐domain.
+    
+    Inputs:
+      data_points: array of shape (N,4) with columns
+                   [lr, bsz, data_size, non_embedding_param_size]
+      params:      1D array of length P = 1 + 4 + 4 + 6 = 15
+    Returns:
+      preds:       array of shape (N,) of predicted losses
     """
-    X = np.asarray(data_points, dtype=float)
-    eps = 1e-12
-    N, F = X.shape
+    X = np.array(data_points, dtype=float)
+    # floor to avoid log(0)
+    X = np.maximum(X, 1e-12)
+    logX = np.log(X)  # (N,4)
 
-    # log‐transform
-    logX = np.log(X + eps)               # (N, F)
+    # normalize to zero mean, half‐range = 1
+    logX_norm = (logX - _LOG_F_MID) / _LOG_F_HALF
 
-    theta = np.asarray(params, dtype=float)
-    # promote to 2D for multi‐target
-    if theta.ndim == 1:
-        theta = theta[None, :]
-    M, P = theta.shape
+    # build polynomial design matrix
+    Phi = _build_design_matrix(logX_norm)
 
-    # choose design matrix by parameter length
-    if P == F + 1:
-        # pure power‐law
-        Z = np.concatenate([np.ones((N, 1)), logX], axis=1)           # (N, F+1)
-    elif P == 2*F + 1:
-        # quadratic in log‐space
-        Z = np.concatenate([np.ones((N, 1)), logX, logX**2], axis=1)  # (N, 1+F+F)
-    else:
-        raise ValueError(f"Expected params of length {F+1} or {2*F+1}, got {P}")
+    p = np.asarray(params, dtype=float).ravel()
+    if p.shape[0] != Phi.shape[1]:
+        raise ValueError(f"Expected {Phi.shape[1]} params but got {p.shape[0]}")
 
-    # linear model in log‐space → exponentiate
-    pred_log = Z.dot(theta.T)    # (N, M)
-    pred     = np.exp(pred_log)  # (N, M)
-
-    return pred.ravel() if M == 1 else pred
+    # linear model in log‐loss domain
+    log_pred = Phi.dot(p)
+    return np.exp(log_pred)
 
 
 def fit_scaling_law(data_points, loss_values):
     """
-    Always fits the quadratic log‐law:
-       log(loss) ≈ intercept + Σ a_i·log(x_i) + Σ b_i·[log(x_i)]^2
-    via ridge‐regularized least squares in log‐space.
+    Fit the above polynomial scaling law via ridge‐regularized normal equations.
+    
+    Inputs:
+      data_points: array of shape (N,4)
+      loss_values: array of shape (N,)
+    Returns:
+      params:      1D array of length 15
     """
-    X = np.asarray(data_points, dtype=float)
-    y = np.asarray(loss_values, dtype=float)
-    N, F = X.shape
-    eps = 1e-12
+    X = np.array(data_points, dtype=float)
+    y = np.array(loss_values, dtype=float)
 
-    # log‐space features
-    logX = np.log(X + eps)                         # (N, F)
-    Z    = np.concatenate([np.ones((N,1)), 
-                           logX, 
-                           logX**2], axis=1)      # (N, 1 + F + F)
-    P    = Z.shape[1]
+    # floor to avoid log(0)
+    X = np.maximum(X, 1e-12)
+    y = np.maximum(y, 1e-12)
 
-    # small ridge penalty (no penalty on intercept)
-    lambda_reg = 1e-3
-    reg        = np.eye(P)
-    reg[0,0]   = 0
-    A          = Z.T.dot(Z) + lambda_reg*reg       # (P, P)
+    logX = np.log(X)    # (N,4)
+    logy = np.log(y)    # (N,)
 
-    # support multi‐target y
-    if y.ndim == 1:
-        y2d = y[:,None]
-    else:
-        y2d = y
-    T = y2d.shape[1]
+    # normalize features
+    logX_norm = (logX - _LOG_F_MID) / _LOG_F_HALF
 
-    params = np.zeros((T, P), dtype=float)
-    for t in range(T):
-        logy       = np.log(y2d[:,t] + eps)        # (N,)
-        b          = Z.T.dot(logy)                 # (P,)
-        params[t]  = np.linalg.solve(A, b)
+    # build design
+    Phi = _build_design_matrix(logX_norm)  # (N,15)
+    N, P = Phi.shape
 
-    return params[0] if T == 1 else params
-# EVOLVE-BLOCK-END
+    # form normal equations
+    A = Phi.T.dot(Phi)
+    b = Phi.T.dot(logy)
+
+    # adaptive ridge: scale by average diag magnitude
+    avg_diag = np.trace(A) / P
+    ridge = 1e-3 * avg_diag
+
+    # apply ridge to all but intercept
+    diag_idx = np.diag_indices(P)
+    A[diag_idx] += ridge
+    A[0,0] -= ridge  # no penalty on intercept
+
+    # solve for parameters
+    params = np.linalg.solve(A, b)
+    return params

@@ -1,0 +1,11 @@
+2025-08-10 11:57:45,697 - openevolve.controller - INFO - Logging to results/lr_scaling_law/run_1/logs/openevolve_20250810_115745.log
+2025-08-10 11:57:45,700 - openevolve.controller - INFO - Set random seed to 42 for reproducibility
+2025-08-10 11:57:45,726 - openevolve.llm.openai - INFO - Initialized OpenAI LLM with model: o4-mini
+2025-08-10 11:57:45,727 - openevolve.llm.ensemble - INFO - Initialized LLM ensemble with models: o4-mini (weight: 1.00)
+2025-08-10 11:57:45,742 - openevolve.prompt.sampler - INFO - Initialized prompt sampler
+2025-08-10 11:57:45,742 - openevolve.prompt.sampler - INFO - Set custom templates: system=evaluator_system_message, user=None
+2025-08-10 11:57:45,742 - openevolve.database - INFO - Initialized program database with 0 programs
+2025-08-10 11:57:45,742 - openevolve.evaluator - INFO - Successfully loaded evaluation function from evaluator.py
+2025-08-10 11:57:45,742 - openevolve.evaluator - INFO - Initialized evaluator with evaluator.py
+2025-08-10 11:57:45,742 - openevolve.controller - INFO - Initialized OpenEvolve with init_program.py
+2025-08-10 11:57:45,742 - openevolve.controller - INFO - Adding initial program to database

@@ -1,13 +1,13 @@
 --- Running Evaluation for Program: results/lr_scaling_law/run_2/best/best_program.py ---
 Inferred Task: lr_scaling_law
 
---- Final Test Results ---
-  Normalized MSE (NMSE): 0.072273
-  Normalized MAE (NMAE): 0.237379
-  R-squared (R2):        0.927727
-  Combined Score:        0.932599
+--- ✅ Final Test Results (Aggregate) ---
+  Normalized MSE (NMSE): 0.009530
+  Normalized MAE (NMAE): 0.103191
+  R-squared (R²):        0.990470
+  Combined Score:        0.990560
 
 Fitted parameters for 1 group(s):
-  - Group 'all_data': [ 4.5705 -0.0169  0.1318 -0.1932 -0.0695  0.0105  0.0089  0.0075  0.0075
- -0.0067 -0.0012  0.0113 -0.0091 -0.0028 -0.0084]
+  - Group 'all_data': [ 1.0124 -0.1811 -0.072  -0.13   -0.113   0.2816  0.2762  0.0787  0.0211
+ -0.1916 -0.0146  0.0869 -0.1562 -0.0334 -0.042 ]
 --------------------------

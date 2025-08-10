@@ -1,99 +1,106 @@
-import numpy as np
-
 # EVOLVE-BLOCK-START
+"""
+Refined scaling‐law for LLM training:
+We model log(loss) as a hybrid polynomial in the log of each feature,
+including first‐order terms for lr and bsz, and both linear and quadratic
+terms plus their interaction for data_size (D) and non_embedding_param_size (P).
+This keeps the model compact (8 params) and regularizes heavily for better
+cross‐configuration generalization.
+"""
+import numpy as np
 
 def scaling_law_func(data_points, params):
     """
-    Enhanced scaling law function supporting:
-      (a) pure power‐law with 5 parameters: [bias, w_lr, w_bsz, w_data, w_param]
-      (b) cross‐quadratic law with 11 parameters:
-          [bias,
-           w1..w4 (linear in log),
-           q1..q4 (quadratic in log),
-           c1=log(lr)*log(bsz),
-           c2=log(data)*log(param)]
+    Predict language‐model loss from hyperparameters via a tailored log‐domain model.
+
+    Args:
+      data_points: array of shape (N,4) with columns
+                   [lr, bsz, data_size (D), non_embedding_param_size (P)]
+      params:      1D array of length 8:
+                   [β0,
+                    β_lr, β_bsz, β_D, β_P,
+                    β_D2, β_P2, β_DP]
+    Returns:
+      preds: array of shape (N,) of predicted loss values.
     """
     X = np.asarray(data_points, dtype=float)
-    eps = 1e-12
-    X = np.maximum(X, eps)         # avoid log(0)
-    logX = np.log(X)               # (N,4)
+    # floor to avoid log(0)
+    X = np.maximum(X, 1e-12)
+    # split features
+    log_lr  = np.log(X[:, 0])
+    log_bsz = np.log(X[:, 1])
+    log_D   = np.log(X[:, 2])
+    log_P   = np.log(X[:, 3])
 
-    theta = np.asarray(params, dtype=float)
-    if theta.ndim == 1:
-        theta = theta[None, :]
-    M, P = theta.shape
-    N, F = logX.shape
+    p = np.asarray(params, dtype=float).ravel()
+    if p.size != 8:
+        raise ValueError(f"Expected 8 parameters, got {p.size}")
 
-    # Build design matrix Z based on parameter length
-    if P == F + 1:
-        # pure power‐law: bias + linear terms
-        Z = np.concatenate([np.ones((N, 1)), logX], axis=1)
-    elif P == 11:
-        # cross‐quadratic law: bias + linear + quadratic + two cross terms
-        lr   = logX[:, 0:1]   # log(lr)
-        bsz  = logX[:, 1:2]   # log(bsz)
-        data = logX[:, 2:3]   # log(data_size)
-        prm  = logX[:, 3:4]   # log(param_size)
-        lin   = np.concatenate([lr, bsz, data, prm], axis=1)
-        quad  = lin**2
-        cross = np.concatenate([lr * bsz, data * prm], axis=1)
-        Z     = np.concatenate([np.ones((N, 1)), lin, quad, cross], axis=1)
-    else:
-        raise ValueError(f"Unsupported params length {P}, expected {F+1} or 11")
+    # build compact design matrix Φ
+    # columns: [1, log_lr, log_bsz, log_D, log_P, (log_D)^2, (log_P)^2, log_D*log_P]
+    N = X.shape[0]
+    Phi = np.empty((N, 8), dtype=float)
+    Phi[:, 0] = 1.0
+    Phi[:, 1] = log_lr
+    Phi[:, 2] = log_bsz
+    Phi[:, 3] = log_D
+    Phi[:, 4] = log_P
+    Phi[:, 5] = log_D * log_D
+    Phi[:, 6] = log_P * log_P
+    Phi[:, 7] = log_D * log_P
 
-    # Linear model in log-space → exponentiate to get loss
-    log_pred = Z.dot(theta.T)      # (N, M)
-    pred     = np.exp(log_pred)    # (N, M)
+    # linear model in log‐domain
+    log_pred = Phi.dot(p)
+    # back to original loss scale
+    return np.exp(log_pred)
 
-    return pred.ravel() if M == 1 else pred
 
 def fit_scaling_law(data_points, loss_values):
     """
-    Fits the cross‐quadratic scaling law:
-      log(loss) ≈ bias
-                  + Σ_i w_i·log(x_i)
-                  + Σ_i q_i·[log(x_i)]^2
-                  + c1·log(lr)·log(bsz)
-                  + c2·log(data_size)·log(param_size)
+    Fit the tailored log‐domain scaling law via ridge‐regularized least squares.
 
-    Solves a ridge‐regularized linear system in log-space.
+    Args:
+      data_points: array of shape (N,4)
+      loss_values: array of shape (N,)
+    Returns:
+      params: 1D array of learned parameters of length 8
     """
     X = np.asarray(data_points, dtype=float)
     y = np.asarray(loss_values, dtype=float)
-    eps = 1e-12
 
-    # Clip to avoid log(0)
-    X = np.maximum(X, eps)
-    y = np.maximum(y, eps)
+    # floor to avoid log(0)
+    X = np.maximum(X, 1e-12)
+    y = np.maximum(y, 1e-12)
 
-    N, F = X.shape
-    logX = np.log(X)         # (N,4)
-    logy = np.log(y)         # (N,)
+    # log‐transform inputs and outputs
+    log_lr  = np.log(X[:, 0])
+    log_bsz = np.log(X[:, 1])
+    log_D   = np.log(X[:, 2])
+    log_P   = np.log(X[:, 3])
+    log_y   = np.log(y)
 
-    # Split features
-    lr   = logX[:, 0:1]
-    bsz  = logX[:, 1:2]
-    data = logX[:, 2:3]
-    prm  = logX[:, 3:4]
+    N = X.shape[0]
+    # construct design matrix Φ (N×8)
+    Phi = np.empty((N, 8), dtype=float)
+    Phi[:, 0] = 1.0
+    Phi[:, 1] = log_lr
+    Phi[:, 2] = log_bsz
+    Phi[:, 3] = log_D
+    Phi[:, 4] = log_P
+    Phi[:, 5] = log_D * log_D
+    Phi[:, 6] = log_P * log_P
+    Phi[:, 7] = log_D * log_P
 
-    # Build design matrix Z: bias + linear(4) + quad(4) + cross(2) = 11 cols
-    lin   = np.concatenate([lr, bsz, data, prm], axis=1)     # (N,4)
-    quad  = lin**2                                             # (N,4)
-    cross = np.concatenate([lr * bsz, data * prm], axis=1)    # (N,2)
-    Z     = np.concatenate([np.ones((N,1)), lin, quad, cross], axis=1)  # (N,11)
+    # ridge regularization for stability (penalize all but intercept)
+    ridge = 1e-6
+    A = Phi.T.dot(Phi)
+    # add ridge to diagonal entries except intercept index 0
+    diag_idx = np.arange(8)
+    A[diag_idx, diag_idx] += ridge
+    A[0, 0] -= ridge
 
-    # Ridge regularization (no penalty on bias)
-    P = Z.shape[1]
-    lambda_reg = 1e-2
-    reg = np.eye(P)
-    reg[0, 0] = 0.0
-
-    A = Z.T.dot(Z) + lambda_reg * reg
-    b = Z.T.dot(logy)
-
-    # Solve for parameters in log-space
-    params = np.linalg.solve(A, b)  # (11,)
-
+    b = Phi.T.dot(log_y)
+    # solve for parameters
+    params = np.linalg.solve(A, b)
     return params
-
 # EVOLVE-BLOCK-END

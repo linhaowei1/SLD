@@ -2,12 +2,13 @@
 
 # Array of task configurations
 tasks=(
-    "data_constrained_scaling_law"
-    "domain_mixture_scaling_law"
+    # "data_constrained_scaling_law"
+    # "domain_mixture_scaling_law"
+    # "lr_scaling_law"
+    # "moe_scaling_law"
+    # "rectified_scaling_law"
+    # "vocab_scaling_law"
     "lr_scaling_law"
-    "moe_scaling_law"
-    "rectified_scaling_law"
-    "vocab_scaling_law"
 )
 
 # Create results directory if it doesn't exist

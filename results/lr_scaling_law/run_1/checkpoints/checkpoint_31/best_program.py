@@ -1,91 +1,119 @@
 import numpy as np
 
+# Pre‐defined log‐ranges for normalization (from problem description)
+_LOG_MIN = np.log(np.array([1.2e-4,    # lr
+                            16.0,      # bsz
+                            4e9,       # data_size
+                            2.14e8     # non_embedding_param_size
+                           ], dtype=np.float64))
+_LOG_MAX = np.log(np.array([2.2e-2,    # lr
+                            4096.0,    # bsz
+                            1e11,      # data_size
+                            1e9        # non_embedding_param_size
+                           ], dtype=np.float64))
+_LOG_MID = 0.5 * (_LOG_MIN + _LOG_MAX)
+_LOG_HALF_RANGE = 0.5 * (_LOG_MAX - _LOG_MIN)
+
+
 def scaling_law_func(data_points, params):
     """
-    Predicts LM loss from hyperparameters via an extended multiplicative power‐law model:
-      log(loss) ≈ intercept + Σ_i w_i * log(x_i) + Σ_i v_i * (log(x_i))^2
-    where x = [lr, bsz, data_size, non_embedding_param_size].
-    
-    Inputs:
-      data_points: array of shape (N,4)
-      params:       array of shape (1 + 4 + 4,) = [intercept, w1..w4, v1..v4]
-                    or shape (T, 9) for multi‐target
-    Returns:
-      preds: array of shape (N,) (or (N,T) if multi‐target)
+    Full quadratic scaling law in normalized log‐space including pairwise interactions:
+      z_i = (log(x_i) - mid_i) / half_range_i
+      log_loss = θ0
+               + sum_i θ1_i * z_i
+               + sum_i θ2_i * z_i^2
+               + sum_{i<j} θ3_{ij} * z_i * z_j
+      loss = exp(log_loss)
+    params is a vector of length 1 + 4 + 4 + 6 = 15:
+      [θ0,
+       θ1_lr, θ1_bsz, θ1_data, θ1_param,
+       θ2_lr, θ2_bsz, θ2_data, θ2_param,
+       θ3_lr_bsz, θ3_lr_data, θ3_lr_param,
+       θ3_bsz_data, θ3_bsz_param,
+       θ3_data_param]
     """
-    X = np.atleast_2d(np.asarray(data_points, dtype=np.float64))
+    X = np.asarray(data_points, dtype=np.float64)
+    if X.ndim == 1:
+        X = X[None, :]
+    N, F = X.shape
+    if F != 4:
+        raise ValueError(f"Expected 4 features, got {F}")
+    p = np.asarray(params, dtype=np.float64).ravel()
+    expected_len = 1 + F + F + (F * (F - 1) // 2)
+    if p.size != expected_len:
+        raise ValueError(f"Expected params of length {expected_len}, got {p.size}")
+
+    # Unpack parameters
+    theta0 = p[0]
+    lin_coeffs = p[1 : 1 + F]
+    quad_coeffs = p[1 + F : 1 + 2 * F]
+    cross_coeffs = p[1 + 2 * F :]
+
+    # Compute normalized logs
     eps = 1e-12
-    # avoid log(0)
-    X = np.maximum(X, eps)
-    # compute log‐features
-    logX = np.log(X)                     # (N,4)
-    lin = logX                          # (N,4)
-    quad = logX * logX                  # (N,4)
-    
-    N, F = logX.shape                   # F == 4
-    # assemble design matrix Z = [1, lin, quad]
-    Z = np.concatenate([np.ones((N,1), dtype=np.float64), lin, quad], axis=1)  # (N,9)
-    
-    theta = np.asarray(params, dtype=np.float64)
-    # support multi‐target: ensure shape (T,P)
-    if theta.ndim == 1:
-        theta = theta[None, :]
-    T, P = theta.shape
-    if P != 1 + 2*F:
-        raise ValueError(f"Expected parameter length {1+2*F}, got {P}")
-    
-    # predictive log‐loss, then exponentiate
-    pred_log = Z.dot(theta.T)           # (N,T)
-    pred = np.exp(pred_log)             # (N,T)
-    
-    # flatten if single‐target
-    return pred.ravel() if T == 1 else pred
+    logs = np.log(X + eps)           # shape (N,4)
+    z = (logs - _LOG_MID) / _LOG_HALF_RANGE
+
+    # Build log‐prediction
+    log_pred = theta0 + z.dot(lin_coeffs) + (z ** 2).dot(quad_coeffs)
+
+    # Add pairwise interaction terms
+    k = 0
+    for i in range(F):
+        for j in range(i + 1, F):
+            log_pred += cross_coeffs[k] * (z[:, i] * z[:, j])
+            k += 1
+
+    # Return in original loss space
+    return np.exp(log_pred)
 
 
 def fit_scaling_law(data_points, loss_values):
     """
-    Fits the extended power‐law model by ridge‐regularized linear regression
-    in log‐space with quadratic terms:
-      log(loss) ≈ intercept + Σ_i w_i * log(x_i) + Σ_i v_i * (log(x_i))^2
-    
-    Returns params of shape (1 + 4 + 4,) = [intercept, w1..w4, v1..v4].
+    Fit the 15‐parameter quadratic‐in‐normalized‐log scaling law by
+    regularized least squares on log(loss).
+    Returns the parameter vector of length 15.
     """
-    X = np.atleast_2d(np.asarray(data_points, dtype=np.float64))
-    y = np.asarray(loss_values, dtype=np.float64)
-    # avoid zeros
+    X = np.asarray(data_points, dtype=np.float64)
+    if X.ndim == 1:
+        X = X[None, :]
+    y = np.asarray(loss_values, dtype=np.float64).ravel()
+
+    N, F = X.shape
+    if F != 4:
+        raise ValueError(f"Expected 4 features, got {F}")
+    if y.shape[0] != N:
+        raise ValueError("Number of data points and losses must match")
+
+    # Build design matrix in normalized log‐space
     eps = 1e-12
-    X = np.maximum(X, eps)
-    y = np.maximum(y, eps)
-    
-    logX = np.log(X)                    # (N,4)
-    logy = np.log(y)                    # (N,)
-    N, F = logX.shape                   # F == 4
-    
-    # design matrix Z = [1, logX, logX^2]
-    lin = logX
-    quad = logX * logX
-    Z = np.concatenate([np.ones((N,1), dtype=np.float64), lin, quad], axis=1)  # (N,1+2F)
-    P = Z.shape[1]
-    
-    # set up ridge regularization: no penalty on intercept,
-    # small λ on linear terms, slightly larger on quadratic
-    lambda_lin = 1e-6
-    lambda_quad = 1e-4
-    reg = np.zeros((P, P), dtype=np.float64)
-    # indices 1..F  ← λ_lin
-    for i in range(1, 1+F):
-        reg[i, i] = lambda_lin
-    # indices (1+F)..(1+2F-1)  ← λ_quad
-    for i in range(1+F, P):
-        reg[i, i] = lambda_quad
-    
-    # normal equations: (Z^T Z + reg) θ = Z^T logy
-    A = Z.T.dot(Z) + reg
-    b = Z.T.dot(logy)
-    try:
-        theta = np.linalg.solve(A, b)
-    except np.linalg.LinAlgError:
-        # fallback if singular
-        theta, *_ = np.linalg.lstsq(Z, logy, rcond=None)
-    
+    logs = np.log(X + eps)
+    z = (logs - _LOG_MID) / _LOG_HALF_RANGE
+
+    # Intercept
+    A_cols = [np.ones((N, 1), dtype=np.float64)]
+    # Linear terms
+    A_cols.append(z)
+    # Quadratic terms
+    A_cols.append(z ** 2)
+    # Pairwise interaction terms
+    cross_cols = []
+    for i in range(F):
+        for j in range(i + 1, F):
+            cross_cols.append((z[:, i] * z[:, j])[:, None])
+    if cross_cols:
+        A_cols.append(np.concatenate(cross_cols, axis=1))
+
+    A = np.concatenate(A_cols, axis=1)  # shape (N,15)
+
+    # Target in log‐space
+    y_log = np.log(y + eps)
+
+    # Regularized normal equations: (A^T A + λI) θ = A^T y_log
+    lam = 1e-5
+    ATA = A.T.dot(A)
+    ATA_reg = ATA + lam * np.eye(ATA.shape[0])
+    ATy = A.T.dot(y_log)
+
+    theta = np.linalg.solve(ATA_reg, ATy)
     return theta

@@ -1,113 +1,130 @@
 import numpy as np
 
 # EVOLVE-BLOCK-START
+"""
+Compact 8-parameter log-domain scaling law:
+
+We model log(loss) as a simple linear function of the logs of each feature,
+with squared terms for data_size and param_size and their interaction:
+    log y = β0
+          + β_lr    * log(lr)
+          + β_bsz   * log(bsz)
+          + β_D     * log(data_size)
+          + β_P     * log(param_size)
+          + β_D2    * [log(data_size)]^2
+          + β_P2    * [log(param_size)]^2
+          + β_DP    * log(data_size) * log(param_size)
+
+This 8-parameter form is compact, stable, and fits in closed-form with
+a tiny ridge penalty for numerical robustness.
+"""
+
 def scaling_law_func(data_points, params):
     """
-    Full quadratic log‐law with cross‐terms:
-      log(loss) ≈ θ0
-                 + Σ_i θ_i · log(x_i)
-                 + Σ_i θ_{i+4} · [log(x_i)]^2
-                 + Σ_{i<j} θ_{9 + k} · log(x_i)·log(x_j)
+    Predict LM loss from hyperparameters via the 8-parameter log-domain model.
 
-    where x = [lr, bsz, data_size, non_embedding_param_size].
-    Total parameters P = 1 + 4 + 4 + 6 = 15.
+    Args:
+      data_points: array of shape (N,4) with columns
+                   [lr, bsz, data_size, non_embedding_param_size]
+      params:      array-like of length 8:
+                   [β0, β_lr, β_bsz, β_D, β_P, β_D2, β_P2, β_DP]
+    Returns:
+      preds: array of shape (N,) of predicted LM loss values.
     """
-    X = np.asarray(data_points, dtype=np.float64)
-    # avoid log(0)
-    eps = 1e-12
-    X = np.maximum(X, eps)
-    logX = np.log(X)  # shape (N,4)
+    X = np.asarray(data_points, dtype=float)
+    # allow single point input
+    if X.ndim == 1:
+        X = X.reshape(1, -1)
+    if X.shape[1] != 4:
+        raise ValueError(f"Expected data_points shape (N,4), got {X.shape}")
 
-    # unpack log‐features
-    lr   = logX[:, 0]
-    bsz  = logX[:, 1]
-    ds   = logX[:, 2]
-    ps   = logX[:, 3]
-    N = logX.shape[0]
+    # floor to avoid log(0)
+    X = np.maximum(X, 1e-12)
+    lr, bsz, D, Psize = X[:,0], X[:,1], X[:,2], X[:,3]
 
-    # build design matrix Z: [1,
-    #                         lr, bsz, ds, ps,
-    #                         lr^2, bsz^2, ds^2, ps^2,
-    #                         lr*bsz, lr*ds, lr*ps,
-    #                         bsz*ds, bsz*ps,
-    #                         ds*ps]
-    Z = np.column_stack([
-        np.ones(N, dtype=np.float64),
-        lr, bsz, ds, ps,
-        lr**2, bsz**2, ds**2, ps**2,
-        lr * bsz, lr * ds, lr * ps,
-        bsz * ds, bsz * ps,
-        ds  * ps
+    # log-transform
+    log_lr  = np.log(lr)
+    log_bsz = np.log(bsz)
+    log_D   = np.log(D)
+    log_P   = np.log(Psize)
+
+    # build design matrix Φ of shape (N,8)
+    # columns = [1, log_lr, log_bsz, log_D, log_P, log_D^2, log_P^2, log_D*log_P]
+    Phi = np.column_stack([
+        np.ones_like(log_lr),
+        log_lr,
+        log_bsz,
+        log_D,
+        log_P,
+        log_D**2,
+        log_P**2,
+        log_D * log_P
     ])
 
-    theta = np.asarray(params, dtype=np.float64).ravel()
-    if theta.size != Z.shape[1]:
-        raise ValueError(f"Expected {Z.shape[1]} parameters, got {theta.size}")
+    p = np.asarray(params, dtype=float).ravel()
+    if p.size != 8:
+        raise ValueError(f"Expected 8 parameters, got {p.size}")
 
-    # predict in log‐space, clamp for numeric stability
-    log_pred = Z.dot(theta)
-    log_pred = np.clip(log_pred, -50.0, 50.0)
-
+    # linear predictor in log-loss domain
+    log_pred = Phi.dot(p)
+    # back to loss domain
     return np.exp(log_pred)
 
 
 def fit_scaling_law(data_points, loss_values):
     """
-    Fits the full quadratic log‐law with cross‐terms via ridge‐regularized
-    weighted least squares in log‐space.
+    Fit the 8-parameter log-domain scaling law via ridge-regularized
+    least squares in the log-loss domain.
 
-    We weight each sample by 1 + normalized( log(data_size) + log(param_size) )
-    to emphasize large‐scale configurations.
+    Args:
+      data_points: array of shape (N,4)
+      loss_values: array of shape (N,)
+    Returns:
+      params: 1D array of length 8 (β0, β_lr, β_bsz, β_D, β_P, β_D2, β_P2, β_DP)
     """
-    X = np.asarray(data_points, dtype=np.float64)
-    y = np.asarray(loss_values, dtype=np.float64)
-    eps = 1e-12
-    X = np.maximum(X, eps)
-    y = np.maximum(y, eps)
+    X = np.asarray(data_points, dtype=float)
+    y = np.asarray(loss_values, dtype=float).ravel()
 
-    logX = np.log(X)   # (N,4)
-    logy = np.log(y)   # (N,)
+    # allow single point input
+    if X.ndim == 1:
+        X = X.reshape(1, -1)
+    if X.shape[0] != y.shape[0]:
+        raise ValueError("Number of data points and loss values must match.")
+    if X.shape[1] != 4:
+        raise ValueError(f"Expected data_points shape (N,4), got {X.shape}")
 
-    # unpack log‐features
-    lr   = logX[:, 0]
-    bsz  = logX[:, 1]
-    ds   = logX[:, 2]
-    ps   = logX[:, 3]
-    N = logX.shape[0]
+    # floor to avoid log(0)
+    X = np.maximum(X, 1e-12)
+    y = np.maximum(y, 1e-12)
 
-    # build design matrix Z as above
-    Z = np.column_stack([
-        np.ones(N, dtype=np.float64),
-        lr, bsz, ds, ps,
-        lr**2, bsz**2, ds**2, ps**2,
-        lr * bsz, lr * ds, lr * ps,
-        bsz * ds, bsz * ps,
-        ds  * ps
-    ])  # shape (N,15)
+    lr, bsz, D, Psize = X[:,0], X[:,1], X[:,2], X[:,3]
+    log_lr  = np.log(lr)
+    log_bsz = np.log(bsz)
+    log_D   = np.log(D)
+    log_P   = np.log(Psize)
+    log_y   = np.log(y)
 
-    # sample weights to emphasize large‐scale points
-    log_scale = ds + ps
-    m, M = log_scale.min(), log_scale.max()
-    if M > m:
-        w_scale = (log_scale - m) / (M - m)
-    else:
-        w_scale = np.zeros_like(log_scale)
-    sample_w = 1.0 + w_scale            # in [1,2]
-    sw_sqrt = np.sqrt(sample_w)
+    N = X.shape[0]
+    # assemble design matrix Φ
+    Phi = np.column_stack([
+        np.ones(N),
+        log_lr,
+        log_bsz,
+        log_D,
+        log_P,
+        log_D**2,
+        log_P**2,
+        log_D * log_P
+    ])
 
-    # apply weights to design matrix and target
-    Zw = Z * sw_sqrt[:, None]
-    yw = logy * sw_sqrt
+    # closed-form ridge solution: solve (ΦᵀΦ + λ·I') p = Φᵀ log_y
+    ridge = 1e-6
+    A = Phi.T.dot(Phi)
+    # apply small ridge only to non-intercept terms
+    A[1:,1:] += ridge
+    b = Phi.T.dot(log_y)
 
-    # ridge regularization (no penalty on intercept)
-    P = Z.shape[1]
-    lambda_reg = 1e-3
-    reg = np.eye(P, dtype=np.float64)
-    reg[0, 0] = 0.0
-
-    A = Zw.T.dot(Zw) + lambda_reg * reg  # (15,15)
-    b = Zw.T.dot(yw)                     # (15,)
-
-    theta = np.linalg.solve(A, b)       # (15,)
-    return theta
+    # solve for parameters
+    params = np.linalg.solve(A, b)
+    return params
 # EVOLVE-BLOCK-END

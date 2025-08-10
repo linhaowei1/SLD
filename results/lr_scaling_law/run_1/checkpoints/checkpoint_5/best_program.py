@@ -1,82 +1,92 @@
 # EVOLVE-BLOCK-START
+"""
+Improved scaling law discovery for LLM finetuning scenarios.
+Model: loss ≈ b + A * lr^{e_lr} * bsz^{e_bsz} * data_size^{e_D} * non_emb_p{e_N}
+with A = exp(logA), fitted via bounded L-BFGS-B from multiple starts.
+"""
 import numpy as np
+from scipy.optimize import minimize
 
 def scaling_law_func(data_points, params):
     """
-    Predict lm loss from hyperparameters using a multiplicative power‐law:
-      loss ≈ exp(intercept) * Π_i x_i**exponent_i
-
-    Inputs:
-      data_points: (N, F) array of positive hyperparameters
-      params:     (P,) or (M, P) array of learned parameters,
-                  where P = F + 1  (intercept + one exponent per feature)
-    Returns:
-      preds: shape (N,) if single output or (N, M) if M‐output
+    Predict lm loss given hyperparameters via a multiplicative power law plus bias.
+    data_points: (N,4) array with columns [lr, bsz, data_size, non_embedding_param_size]
+    params: (6,) array [b, logA, e_lr, e_bsz, e_data, e_model]
+    Returns: (N,) array of predicted losses
     """
     X = np.atleast_2d(np.asarray(data_points, dtype=float))
+    lr   = X[:, 0]
+    bsz  = X[:, 1]
+    D    = X[:, 2]
+    Np   = X[:, 3]
+    b, logA, e_lr, e_bsz, e_D, e_N = params
+    # Numerical stability epsilon
     eps = 1e-12
-    # log‐transform the features for a linear model in log‐space
-    logX = np.log(X + eps)              # (N, F)
-
-    theta = np.asarray(params, dtype=float)
-    # support multi‐target: shape into (M, P)
-    if theta.ndim == 1:
-        theta = theta[None, :]
-    M, P = theta.shape
-    N, F = X.shape
-    if P != F + 1:
-        raise ValueError(f"Expected param length {F+1}, got {P}")
-
-    # design matrix Z = [1, log(x1), log(x2), ..., log(xF)]
-    Z = np.concatenate([np.ones((N, 1)), logX], axis=1)  # (N, P)
-
-    # linear prediction in log‐space, then exponentiate
-    pred_log = Z.dot(theta.T)                            # (N, M)
-    pred = np.exp(pred_log)                              # (N, M)
-
-    # flatten if only one target
-    return pred.ravel() if M == 1 else pred
-
+    # Compute log-term for stability: log_term = logA + e_lr*ln(lr) + ...
+    log_term = (
+        logA
+        + e_lr  * np.log(lr  + eps)
+        + e_bsz * np.log(bsz + eps)
+        + e_D   * np.log(D    + eps)
+        + e_N   * np.log(Np   + eps)
+    )
+    term = np.exp(log_term)
+    return b + term
 
 def fit_scaling_law(data_points, loss_values):
     """
-    Fit the intercept + exponents in log‐space via (ridge‐regularized)
-    linear regression:
-      log(loss) ≈ intercept + Σ_i exponent_i * log(x_i)
-
-    Returns:
-      params: shape (P,) or (T, P) if multi‐target,
-              where P = F + 1
+    Fit the 6-parameter multiplicative scaling law to minimize MSE.
+    Returns optimized params: [b, logA, e_lr, e_bsz, e_data, e_model]
+    If multi-target loss_values given (shape N×T), returns array (T,6).
     """
     X = np.atleast_2d(np.asarray(data_points, dtype=float))
     y = np.asarray(loss_values, dtype=float)
-    N, F = X.shape
-    eps = 1e-12
-
-    # build design matrix in log‐space
-    logX = np.log(X + eps)              # (N, F)
-    Z = np.concatenate([np.ones((N, 1)), logX], axis=1)  # (N, P)
-    P = F + 1
-
-    # small ridge penalty for numeric stability (no penalty on intercept)
-    lambda_reg = 1e-6
-    reg = np.eye(P)
-    reg[0, 0] = 0
-    A = Z.T.dot(Z) + lambda_reg * reg   # (P, P)
-
-    # support multi‐target losses
+    # Ensure 2D output for possibly multi-target regression
     if y.ndim == 1:
         y2d = y[:, None]
     else:
         y2d = y
     T = y2d.shape[1]
 
-    params = np.zeros((T, P), dtype=float)
-    for t in range(T):
-        logy = np.log(y2d[:, t] + eps)  # (N,)
-        b = Z.T.dot(logy)                # (P,)
-        params[t] = np.linalg.solve(A, b)
+    def _fit_single(y_vec):
+        # Vector target y_vec of shape (N,)
+        y_min, y_max = np.min(y_vec), np.max(y_vec)
+        # Two reasonable initializations
+        init1 = np.array([max(0.0, y_min * 0.5), np.log(max(y_max - y_min, 1e-3)),
+                          -0.5, -0.5, -0.5, -0.5], dtype=float)
+        init2 = np.array([0.0, np.log(max(y_max, 1e-3)),
+                          -1.0, -1.0, -0.1, -0.1], dtype=float)
+        # Bounds: bias b in [0, 2*max(y)], logA unbounded, exponents in [-5,5]
+        bounds = [
+            (0.0, max(y_max * 2, 1.0)),
+            (None, None),
+            (-5.0, 5.0),
+            (-5.0, 5.0),
+            (-5.0, 5.0),
+            (-5.0, 5.0),
+        ]
+        best_params = None
+        best_loss = np.inf
 
-    # return (P,) when single target, else (T, P)
-    return params[0] if T == 1 else params
+        # Objective: mean squared error
+        def obj(p):
+            pred = scaling_law_func(X, p)
+            return np.mean((pred - y_vec) ** 2)
+
+        # Try both initializations
+        for init in (init1, init2):
+            res = minimize(obj, init, method='L-BFGS-B', bounds=bounds)
+            if res.success and res.fun < best_loss:
+                best_loss = res.fun
+                best_params = res.x
+
+        # Fallback to init1 if all fails
+        return best_params if best_params is not None else init1
+
+    # Fit for each target dimension
+    if T == 1:
+        return _fit_single(y2d[:, 0])
+    else:
+        params_all = [ _fit_single(y2d[:, i]) for i in range(T) ]
+        return np.vstack(params_all)
 # EVOLVE-BLOCK-END

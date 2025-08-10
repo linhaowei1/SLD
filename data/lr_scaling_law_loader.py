@@ -27,7 +27,7 @@ def load_data_for_task(
     max_data_size = df["D"].max()
     max_param_size = df["N"].max()
 
-    test_mask = (df["D"] == max_data_size) | (df["N"] == max_param_size)
+    test_mask = (df["D"] == max_data_size) & (df["N"] == max_param_size)
     
     if train:
         train_mask = ~test_mask
