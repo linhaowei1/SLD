@@ -6,14 +6,15 @@ random_seed: 42
 
 # LLM configuration
 llm:
-  models:
-    - name: "o4-mini"
-      weight: 1.0
+  primary_model: null
+  primary_model_weight: 1.0
+  secondary_model: null
+  secondary_model_weight: 0.0
   api_base: "http://api.llm.wq/v1"
   max_tokens: 16384
-  timeout: 120
-  retries: 3
-  retry_delay: 5
+  timeout: 240
+  retries: 10
+  retry_delay: 10
 
 # Prompt configuration
 prompt:
@@ -24,21 +25,22 @@ prompt:
 
     Focus on mathematical accuracy across different data scales, cross-dataset generalization, parameter efficiency (simple forms that can be fitted with limited data), and numerical/theoretical stability.
 
-    **DATA CHARACTERISTICS:**
-    - Features: [tokens, params, unique_tokens] - 3D input
+    **DATA CHARACTERISTICS (182 total data points):**
+    - Features: [unique_tokens, params, tokens] - 3D input
     - Labels: loss - scalar output
-    - Tokens: training data size (number of tokens processed)
-    - Params: model parameter count
-    - Unique_tokens: number of unique tokens in training data
-    - Loss: model performance metric
-    - Data explores the relationship between data constraints and model quality
-    - 80/20 train/test split applied
+    - Dataset size: 161 training, 21 test samples (88%/12% split)
+    - Parameter range (P): 1.1e8 to 1.1e9 (100M to 1.1B parameters)
+    - Token count range (D): 1e9 to 1e12 tokens
+    - Unique tokens range: 1e7 to 5e8 unique tokens
+    - Loss range: 1.8 to 7.2 (cross-entropy loss)
+    - Model architectures: Transformer variants with different parameterizations
+    - Data explores scaling under token/unique-token constraints
 
     The function signatures must remain:
 
     ```python
     def scaling_law_func(data_points, params):
-        # data_points: (N,3) array with columns [tokens, params, unique_tokens]
+        # data_points: (N,3) array with columns [unique_tokens, params, tokens]
         # tokens: Array of token counts
         # params: Array of parameter counts
         # unique_tokens: Array of unique token counts
@@ -46,7 +48,7 @@ prompt:
         # Returns: Predicted loss values
 
     def fit_scaling_law(data_points, loss_values):
-        # data_points: (N,3) array with columns [tokens, params, unique_tokens]
+        # data_points: (N,3) array with columns [unique_tokens, params, tokens]
         # loss_values: Array of corresponding loss values
         # Returns: Optimized parameters (up to 7 parameters)
     ```
@@ -69,7 +71,7 @@ database:
   elite_selection_ratio: 0.1
   exploration_ratio: 0.2
   exploitation_ratio: 0.7
-  feature_dimensions: ["combined_score"]
+  feature_dimensions: ["combined_score", "complexity", "diversity"]
   feature_bins: 10
 
 # Evaluator configuration
@@ -83,4 +85,4 @@ evaluator:
 
 # Evolution settings
 diff_based_evolution: false
-max_code_length: 10000
+max_code_length: 100000

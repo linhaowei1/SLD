@@ -1,0 +1,93 @@
+# Configuration for learning rate scaling law discovery with OpenEvolve
+max_iterations: 200
+checkpoint_interval: 1
+log_level: "INFO"
+random_seed: 42
+
+# LLM configuration
+llm:
+  primary_model: null
+  primary_model_weight: 1.0
+  secondary_model: null
+  secondary_model_weight: 0.0
+  api_base: "http://api.llm.wq/v1"
+  max_tokens: 16384
+  timeout: 240
+  retries: 10
+  retry_delay: 10
+
+# Prompt configuration
+prompt:
+  system_message: |
+    You are an expert in scaling laws and machine learning who specializes in discovering and improving scaling law functions for different LLM training scenarios. Your task is to evolve both the `scaling_law_func` function (currently a naive power law) and the `fit_scaling_law` optimization algorithm (currently a naive BFGS) to better model the relationship between learning rate, batch size, data size, model parameters and training loss.
+
+    You are allowed to decide the number of parameters in the scaling law function.
+
+    Focus on mathematical accuracy across different hyperparameter scales, cross-configuration generalization, parameter efficiency (simple forms that can be fitted with limited data), and numerical/theoretical stability.
+
+    **DATA CHARACTERISTICS (1847 total data points):**
+    - Features: [lr, bsz, data_size, non_embedding_param_size] - 4D input
+    - Labels: lm loss - scalar output
+    - Dataset size: 1730 training, 117 test samples (94%/6% split)
+    - Learning rate range: 1.2e-4 to 2.2e-2 (logarithmically spaced)
+    - Batch size range: 16 to 4096 (powers of 2)
+    - Data size range: 4e9 to 1e11 tokens (4B to 100B tokens)
+    - Parameter range: 2.14e8 to 1e9 (214M to 1B non-embedding parameters)
+    - Loss range: 1.7 to 3.2 cross-entropy loss
+    - Test strategy: Largest data_size and parameter_size configurations held out
+    - Comprehensive hyperparameter sweep covering learning rate and batch size effects
+
+    The function signatures must remain:
+
+    ```python
+    def scaling_law_func(data_points, params):
+        # data_points: (N,4) array with columns [lr, bsz, data_size, non_embedding_param_size]
+        # lr: Array of learning rates
+        # bsz: Array of batch sizes
+        # data_size: Array of data sizes
+        # non_embedding_param_size: Array of non-embedding parameter sizes
+        # Returns: Predicted lm loss values
+        - Model parameters (N) range: ~214M to ~1B parameters
+        - Training tokens (D) range: 4B to 100B tokens
+        - Learning rates range: 1.2e-4 to 2.2e-2
+        - Batch sizes range: 16 to 4096
+
+    def fit_scaling_law(data_points, loss_values):
+        # data_points: (N,4) array with columns [lr, bsz, data_size, non_embedding_param_size]
+        # loss_values: Array of corresponding lm loss values
+        # Returns: Optimized parameters 
+    ```
+
+    Write all improvements between # EVOLVE-BLOCK-START and # EVOLVE-BLOCK-END markers.
+
+    You are not allowed to use input-dependent feature in scaling_law_func, e.g., median / min / max / etc.
+
+  num_top_programs: 3
+  num_diverse_programs: 2
+  use_template_stochasticity: true
+
+# Database configuration for evolution
+database:
+  population_size: 100
+  archive_size: 50
+  num_islands: 5
+  migration_interval: 25
+  migration_rate: 0.1
+  elite_selection_ratio: 0.1
+  exploration_ratio: 0.2
+  exploitation_ratio: 0.7
+  feature_dimensions: ["combined_score", "complexity", "diversity"]
+  feature_bins: 10
+
+# Evaluator configuration
+evaluator:
+  timeout: 600
+  max_retries: 3
+  cascade_evaluation: false
+  cascade_thresholds: [0.3, 0.6]
+  parallel_evaluations: 4
+  use_llm_feedback: false
+
+# Evolution settings
+diff_based_evolution: false
+max_code_length: 100000

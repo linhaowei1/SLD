@@ -1,0 +1,93 @@
+# Configuration for parallel scaling law discovery with OpenEvolve
+max_iterations: 50
+checkpoint_interval: 1
+log_level: "INFO"
+random_seed: 42
+
+# LLM configuration
+llm:
+  primary_model: null
+  primary_model_weight: 1.0
+  secondary_model: null
+  secondary_model_weight: 0.0
+  api_base: "http://api.llm.wq/v1"
+  max_tokens: 16384
+  timeout: 240
+  retries: 10
+  retry_delay: 10
+  
+# Prompt configuration
+prompt:
+  system_message: |
+    You are an expert in scaling laws and machine learning who specializes in discovering and improving scaling law functions for different LLM training scenarios. Your task is to evolve both the `scaling_law_func` function (currently a naive power law) and the `fit_scaling_law` optimization algorithm (currently a naive BFGS) to better model the relationship between model parameter count, parallel size, and language modeling loss. Here we apply `parallel_size` transformations to the input, execute forward passes of the model in parallel, and aggregate the `parallel_size` outputs. We call this method parallel scaling.
+
+    **IMPORTANT: The scaling law function must use no more than 4 parameters.**
+
+    Focus on mathematical accuracy across different parallel configurations, cross-dataset generalization, parameter efficiency (simple forms that can be fitted with limited data), and numerical/theoretical stability.
+
+    **DATA CHARACTERISTICS (36 total data points across 2 groups):**
+    - Features: [num_params, parallel_size] - 2D input
+    - Labels: loss - scalar output
+    - Groups: 'pile' and 'stack' datasets (18 samples each)
+    - Parameter range: 5.36e8 to 4.38e9 parameters (536M to 4.38B)
+    - Parallel sizes: [1, 2, 4] copies
+    - Loss range by group:
+      - 'pile': 1.7938 to 2.1113 (higher loss values)
+      - 'stack': 0.9906 to 1.1722 (lower loss values)
+    - Key observation: Increasing parallel_size decreases loss
+      - parallel_size=1: avg loss 1.9780 (pile), 1.0972 (stack)
+      - parallel_size=2: avg loss 1.9480 (pile), 1.0767 (stack)  
+      - parallel_size=4: avg loss 1.9259 (pile), 1.0635 (stack)
+    - Experimental setup: Augment input with parallel_size copies, pass through LLM, aggregate responses
+    
+    The function signatures must remain:
+
+    ```python
+    def scaling_law_func(data_points, params):
+        # data_points: (N,2) array with columns [num_params, parallel_size]
+        # num_params: Array of model parameter counts
+        # parallel_size: Array of parallel copies for input augmentation
+        # params: Array of up to 4 parameters
+        # Returns: Predicted loss values
+
+    def fit_scaling_law(data_points, loss_values):
+        # data_points: (N,2) array with columns [num_params, parallel_size]
+        # num_params: Array of model parameter counts
+        # parallel_size: Array of parallel copies for input augmentation
+        # loss_values: Array of corresponding loss values
+        # Returns: Optimized parameters (up to 4 parameters)
+    ```
+
+    Write all improvements between # EVOLVE-BLOCK-START and # EVOLVE-BLOCK-END markers.
+
+    You are not allowed to use input-dependent feature in scaling_law_func, e.g., median / min / max / etc.
+
+  num_top_programs: 3
+  num_diverse_programs: 2
+  use_template_stochasticity: true
+
+# Database configuration for evolution
+database:
+  population_size: 100
+  archive_size: 50
+  num_islands: 5
+  migration_interval: 25
+  migration_rate: 0.1
+  elite_selection_ratio: 0.1
+  exploration_ratio: 0.2
+  exploitation_ratio: 0.7
+  feature_dimensions: ["combined_score", "complexity", "diversity"]
+  feature_bins: 10
+
+# Evaluator configuration
+evaluator:
+  timeout: 600
+  max_retries: 3
+  cascade_evaluation: false
+  cascade_thresholds: [0.3, 0.6]
+  parallel_evaluations: 4
+  use_llm_feedback: false
+
+# Evolution settings
+diff_based_evolution: false
+max_code_length: 100000

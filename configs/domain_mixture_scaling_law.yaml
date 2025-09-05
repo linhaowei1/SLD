@@ -6,14 +6,15 @@ random_seed: 42
 
 # LLM configuration
 llm:
-  models:
-    - name: "o4-mini"
-      weight: 1.0
+  primary_model: null
+  primary_model_weight: 1.0
+  secondary_model: null
+  secondary_model_weight: 0.0
   api_base: "http://api.llm.wq/v1"
   max_tokens: 16384
-  timeout: 120
-  retries: 3
-  retry_delay: 5
+  timeout: 240
+  retries: 10
+  retry_delay: 10
 
 # Prompt configuration
 prompt:
@@ -24,13 +25,15 @@ prompt:
 
     Focus on mathematical accuracy across different model sizes, cross-domain generalization, parameter efficiency (simple forms that can be fitted with limited data), and numerical/theoretical stability.
 
-    **DATA CHARACTERISTICS:**
+    **DATA CHARACTERISTICS (104 total data points across 4 model sizes):**
     - Features: Domain proportions (5 domains) - array of shape (n_mixtures, 5)
     - Labels: Multi-domain losses (5 domains) - array of shape (n_mixtures, 5)
-    - Model sizes: 70M, 160M, 410M, 1B (each is a separate group)
-    - Domain proportions vary across different mixture configurations
-    - Loss values vary per domain and mixture configuration
-    - This is a multi-output regression problem where both inputs and outputs are multi-dimensional
+    - Dataset size: 80 training (20 per model size), 24 test (6 per model size) samples
+    - Model parameter sizes: 70M, 160M, 410M, 1B parameters (4 separate groups)
+    - Domain proportions: Each row sums to 1.0 (mixture weights)
+    - Loss ranges: Domain losses span 1.8-4.2 cross-entropy loss
+    - Mixture configurations: Systematic exploration of different domain weight combinations
+    - This is a multi-output regression problem with correlated domain performances
 
     The function signatures must remain:
 
@@ -65,7 +68,7 @@ database:
   elite_selection_ratio: 0.1
   exploration_ratio: 0.2
   exploitation_ratio: 0.7
-  feature_dimensions: ["combined_score"]
+  feature_dimensions: ["combined_score", "complexity", "diversity"]
   feature_bins: 10
 
 # Evaluator configuration
@@ -79,4 +82,4 @@ evaluator:
 
 # Evolution settings
 diff_based_evolution: false
-max_code_length: 10000
+max_code_length: 100000

@@ -6,14 +6,15 @@ random_seed: 42
 
 # LLM configuration
 llm:
-  models:
-    - name: "o4-mini"
-      weight: 1.0
+  primary_model: null
+  primary_model_weight: 1.0
+  secondary_model: null
+  secondary_model_weight: 0.0
   api_base: "http://api.llm.wq/v1"
   max_tokens: 16384
-  timeout: 120
-  retries: 3
-  retry_delay: 5
+  timeout: 240
+  retries: 10
+  retry_delay: 10
 
 # Prompt configuration
 prompt:
@@ -24,14 +25,16 @@ prompt:
 
     Focus on mathematical accuracy across different MoE configurations, generalization across expert counts and model sizes, parameter efficiency (simple forms that can be fitted with limited data), and numerical/theoretical stability.
 
-    **DATA CHARACTERISTICS:**
+    **DATA CHARACTERISTICS (221 total data points):**
     - Features: [num_experts, dense_parameter_count] - 2D input
     - Labels: loss_validation - scalar output
-    - Number of experts: ranges from 1 to multiple values
-    - Dense parameter count: ranges across different model architectures
-    - Validation loss: continuous values representing model performance
-    - All data filtered to step 249000 for consistency
-    - 80/20 train/test split applied
+    - Dataset size: 193 training, 28 test samples (87%/13% split)
+    - Number of experts: 1 to 64 experts (various configurations)
+    - Dense parameter count: 1e8 to 8e8 parameters (100M to 800M parameters)
+    - Validation loss range: 1.8 to 3.8 cross-entropy loss
+    - All data collected at training step 249000 for consistent comparison
+    - Includes both dense and MoE transformer architectures
+    - Explores trade-off between expert count and parameter efficiency
 
     The function signatures must remain:
 
@@ -67,7 +70,7 @@ database:
   elite_selection_ratio: 0.1
   exploration_ratio: 0.2
   exploitation_ratio: 0.7
-  feature_dimensions: ["combined_score"]
+  feature_dimensions: ["combined_score", "complexity", "diversity"]
   feature_bins: 10
 
 # Evaluator configuration
@@ -81,4 +84,4 @@ evaluator:
 
 # Evolution settings
 diff_based_evolution: false
-max_code_length: 10000
+max_code_length: 100000

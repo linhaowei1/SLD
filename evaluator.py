@@ -1,25 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Unified Evaluator for Scaling Law Discovery.
-
-This evaluator is refactored to work with a standardized data format where all
-input features are consolidated into a single NumPy array `X`.
-
-It supports two calling styles:
-1. Task-specific (recommended): `evaluate(program_path)`
-   - Infers the task from the environment or path.
-   - Automatically runs the fit -> evaluate pipeline.
-2. Core/Generic: `evaluate_core(program_path, task_name, ...)`
-   - Requires explicit task name and manual control over fitting vs. evaluating.
-
-Revision Highlights:
-- Simplified task configuration to a set of names.
-- Reworked metric calculation to correctly handle multi-dimensional y-values
-  by averaging metrics across dimensions.
-- Added per-dimension metrics to the output for multi-dimensional targets.
-- Removed unnecessary data flattening to preserve data structure.
-- **NMSE normalization is now calculated using the variance of the combined
-  training and test sets for greater stability.**
 """
 import argparse
 import concurrent.futures
@@ -39,12 +20,13 @@ from data_loader import load_data
 # --- Task Configuration ---
 # A set of supported task names. The evaluator will infer which one to use.
 SUPPORTED_TASKS = {
-    "rectified_scaling_law",
+    "sft_scaling_law",
     "data_constrained_scaling_law",
     "moe_scaling_law",
     "vocab_scaling_law",
     "domain_mixture_scaling_law",
-    "lr_scaling_law",
+    "lr_bsz_scaling_law",
+    "parallel_scaling_law"
 }
 
 # --- Core Functions ---

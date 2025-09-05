@@ -63,9 +63,9 @@ The result is a practical engine that can **rediscover** known laws and **propos
 | :--- | :--- | :--- |
 | `data_constrained_scaling_law` | `configs/data_constrained_scaling_law.yaml` | `data/data_constrained_scaling_law/` |
 | `domain_mixture_scaling_law` | `configs/domain_mixture_scaling_law.yaml` | `data/domain_mixture_scaling_law/` |
-| `lr_scaling_law` | `configs/lr_scaling_law.yaml` | `data/lr_scaling_law/` |
+| `lr_bsz_scaling_law` | `configs/lr_bsz_scaling_law.yaml` | `data/lr_bsz_scaling_law/` |
 | `moe_scaling_law` | `configs/moe_scaling_law.yaml` | `data/moe_scaling_law/` |
-| `rectified_scaling_law` | `configs/rectified_scaling_law.yaml` | `data/rectified_scaling_law/` |
+| `sft_scaling_law` | `configs/sft_scaling_law.yaml` | `data/sft_scaling_law/` |
 | `vocab_scaling_law` | `configs/vocab_scaling_law.yaml` | `data/vocab_scaling_law/` |
 
 > Add your own tasks in the same pattern; see [Add a New Scaling Law](https://www.google.com/search?q=%23%E2%9E%95-add-a-new-scaling-law).

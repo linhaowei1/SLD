@@ -6,14 +6,15 @@ random_seed: 42
 
 # LLM configuration
 llm:
-  models:
-    - name: "o4-mini"
-      weight: 1.0
+  primary_model: null
+  primary_model_weight: 1.0
+  secondary_model: null
+  secondary_model_weight: 0.0
   api_base: "http://api.llm.wq/v1"
   max_tokens: 16384
-  timeout: 120
-  retries: 3
-  retry_delay: 5
+  timeout: 240
+  retries: 10
+  retry_delay: 10
 
 # Prompt configuration
 prompt:
@@ -24,16 +25,18 @@ prompt:
 
     Focus on mathematical accuracy across different vocabulary configurations, cross-dataset generalization, parameter efficiency (simple forms that can be fitted with limited data), and numerical/theoretical stability.
 
-    **DATA CHARACTERISTICS (1200+ data points):**
-    - Vocabulary Size: 4096 to 96256 (8 unique sizes)
-    - Embedding Dimension: 512 to 2048 (4 unique values)
-    - Number of Characters: ~100M to ~5T characters
-    - Non-vocabulary Parameters: 33M to 1.1B parameters
-    - FLOPs: 1.3e16 to 4.4e20 
-    - Lossu Values: -5.34 to -0.51 (mean: -3.9, std: 1.0)
-
-    Lossu indicates the improvement in probability that a context-aware language model offers over a unigram model without context (can be negative).
-    The dataset explores the scaling relationship between vocabulary size, model architecture parameters, training scale and resulting model quality.
+    **DATA CHARACTERISTICS (1200 total data points):**
+    - Features: [non_vocab_parameters, vocab_size, num_characters] - 3D input
+    - Labels: unigram_normalized_loss - scalar output
+    - Dataset size: 1080 training, 120 test samples (90%/10% split)
+    - Vocabulary size: 4096 to 96256 tokens (8 distinct sizes)
+    - Embedding dimension: 512 to 2048 dimensions (4 values)
+    - Character count: 1e8 to 5e12 characters (100M to 5T characters)
+    - Non-vocab parameters: 3.3e7 to 1.1e9 (33M to 1.1B parameters)
+    - FLOPs range: 1.3e16 to 4.4e20 operations
+    - Lossu range: -5.34 to -0.51 (negative values indicate improvement over unigram)
+    - Lossu measures improvement over context-free unigram model (negative = better)
+    - Explores vocabulary scaling trade-offs across parameter, data, and architecture dimensions
 
     The function signatures must remain:
 
@@ -73,7 +76,7 @@ database:
   elite_selection_ratio: 0.1
   exploration_ratio: 0.2
   exploitation_ratio: 0.7
-  feature_dimensions: ["combined_score"]
+  feature_dimensions: ["combined_score", "complexity", "diversity"]
   feature_bins: 10
 
 # Evaluator configuration
@@ -87,4 +90,4 @@ evaluator:
 
 # Evolution settings
 diff_based_evolution: false
-max_code_length: 10000
+max_code_length: 100000
