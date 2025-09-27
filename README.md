@@ -106,7 +106,7 @@ bash scripts/run.sh
 ```
 SLD/
 ├─ configs/                  # ⚙️ YAML configs (one per scaling law)
-│  ├─ data_constrained_scaling_law_scaling_law.yaml
+│  ├─ data_constrained_scaling_law.yaml
 │  ├─ domain_mix_scaling_law.yaml
 │  ├─ lr_and_bsz_scaling_law.yaml
 │  ├─ moe_scaling_law.yaml
