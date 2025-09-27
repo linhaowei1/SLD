@@ -23,13 +23,11 @@ tasks=(
 
 # Array of models to test
 models=(
-    "o4-mini"
-    "gpt-5"
-    "gemini-2.5-flash"
+    "claude-sonnet-4-20250514"
 )
 
 # Base directory for results
-RESULTS_BASE_DIR="/WillDevExt/linhaoweiShare/evosld-results"
+RESULTS_BASE_DIR="./results"
 
 ## --- Graceful Shutdown ---
 
@@ -110,7 +108,7 @@ run_single_job() {
 
 echo "Starting benchmark with a parallelism degree of $PARALLELISM_DEGREE PER MODEL."
 # Calculate and display the total number of jobs that will be executed
-total_runs_per_config=10
+total_runs_per_config=3
 total_jobs=$((${#tasks[@]} * ${#models[@]} * total_runs_per_config))
 echo "Total jobs to run: $total_jobs"
 

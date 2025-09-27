@@ -28,7 +28,7 @@ prompt:
     **DATA CHARACTERISTICS (182 total data points):**
     - Features: [unique_tokens, params, tokens] - 3D input
     - Labels: loss - scalar output
-    - Dataset size: 161 training, 21 test samples (88%/12% split)
+    - Dataset size: 161 
     - Parameter range (P): 1.1e8 to 1.1e9 (100M to 1.1B parameters)
     - Token count range (D): 1e9 to 1e12 tokens
     - Unique tokens range: 1e7 to 5e8 unique tokens

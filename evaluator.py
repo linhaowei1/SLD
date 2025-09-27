@@ -54,21 +54,17 @@ def run_with_timeout(func, args=(), kwargs={}, timeout_seconds: int = 600):
 def calculate_final_metrics(
     predictions: np.ndarray,
     true_values: np.ndarray,
-    train_true_values: np.ndarray = None,
 ) -> Dict[str, Any]:
     """
     Calculates evaluation metrics, correctly handling multi-dimensional outputs.
 
     For multi-dimensional targets, metrics (NMSE, NMAE) are calculated for each
-    dimension separately and then averaged. The normalization factor (variance)
-    is computed using both training and test data for stability.
+    dimension separately and then averaged. The normalization factors (variance
+    and mean absolute deviation) are computed using only the test data.
 
     Args:
         predictions: The model's predictions as a NumPy array.
         true_values: The ground truth values from the test set as a NumPy array.
-        train_true_values: Optional. The ground truth values from the training
-                           set, used to compute a more stable variance for
-                           normalization.
 
     Returns:
         A dictionary containing aggregate and per-dimension metrics.
@@ -100,33 +96,16 @@ def calculate_final_metrics(
     test_mse_per_dim = np.mean((true - pred) ** 2, axis=0)
     test_mae_per_dim = np.mean(np.abs(true - pred), axis=0)
 
-    # 6. Calculate normalizers using combined train and test data for stability
-    if train_true_values is not None and train_true_values.size > 0:
-        try:
-            train_true = np.asarray(train_true_values, dtype=float)
-            if train_true.ndim == 1:
-                train_true = train_true.reshape(-1, 1)
-            
-            if train_true.shape[1] == true.shape[1]:
-                combined_true_values = np.concatenate((true, train_true), axis=0)
-            else:
-                print("Warning: Train/test target dimensions mismatch. Using test data only for variance.", file=sys.stderr)
-                combined_true_values = true
-        except Exception as e:
-            print(f"Warning: Could not process train_true_values. Using test data only for variance. Error: {e}", file=sys.stderr)
-            combined_true_values = true
-    else:
-        combined_true_values = true
-        
-    variance_per_dim = np.var(combined_true_values, axis=0)
-    mean_abs_dev_per_dim = np.mean(np.abs(combined_true_values - np.mean(combined_true_values, axis=0)), axis=0)
+    # 6. Calculate normalizers using the test set only
+    variance_per_dim = np.var(true, axis=0)
+    mean_abs_dev_per_dim = np.mean(np.abs(true - np.mean(true, axis=0)), axis=0)
 
     # 7. Calculate normalized metrics, avoiding division by zero
     nmse_per_dim = np.divide(test_mse_per_dim, variance_per_dim,
-                             out=test_mse_per_dim.copy(),
+                             out=np.full_like(test_mse_per_dim, np.inf), # Use np.inf where variance is zero
                              where=variance_per_dim > 1e-9)
     nmae_per_dim = np.divide(test_mae_per_dim, mean_abs_dev_per_dim,
-                             out=test_mae_per_dim.copy(),
+                             out=np.full_like(test_mae_per_dim, np.inf), # Use np.inf where MAD is zero
                              where=mean_abs_dev_per_dim > 1e-9)
 
     # 8. Calculate R^2 for each dimension
@@ -135,6 +114,8 @@ def calculate_final_metrics(
     # 9. Average per-dimension metrics for final aggregate scores
     nmse = np.mean(nmse_per_dim)
     nmae = np.mean(nmae_per_dim)
+    # The standard definition of R^2 relates to the total variance, so it's 1 - (total MSE / total variance)
+    # which is equivalent to 1 - mean(nmse_per_dim) if variances are similar, but this is more direct.
     r2 = 1.0 - nmse
 
     # 10. Compile the results dictionary
@@ -219,14 +200,6 @@ def evaluate_core(
             if not test_data:
                 return get_failure_result("No test data found.")
 
-            # Load training data to get true values for stable normalization
-            train_data = load_data(task_name, train=True)
-            if not train_data:
-                print("Warning: Could not load training data for variance calculation. Using test data only.", file=sys.stderr)
-                all_train_true_values = None
-            else:
-                all_train_true_values = np.concatenate([y_train for _, y_train in train_data.values()])
-
             all_predictions, all_true_values = [], []
             for key, (X_test, y_test) in test_data.items():
                 if key not in fitted_params_map:
@@ -247,7 +220,6 @@ def evaluate_core(
             return calculate_final_metrics(
                 final_predictions,
                 final_true_values,
-                train_true_values=all_train_true_values
             )
 
     except Exception as e:

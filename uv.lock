@@ -281,7 +281,7 @@ dependencies = [
 requires-dist = [
     { name = "datasets", specifier = ">=4.0.0" },
     { name = "matplotlib", specifier = ">=3.10.5" },
-    { name = "openevolve", specifier = ">=0.1.0" },
+    { name = "openevolve", specifier = ">=0.2.15" },
     { name = "pandas", specifier = ">=2.3.1" },
     { name = "scikit-learn", specifier = ">=1.7.1" },
     { name = "scipy", specifier = ">=1.16.1" },
@@ -778,7 +778,7 @@ wheels = [
 
 [[package]]
 name = "openevolve"
-version = "0.1.0"
+version = "0.2.15"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "flask" },
@@ -787,9 +787,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/23/03/ebc565d2233e79ecac15493f86cf0436c711028425fa0599013055c7a2cf/openevolve-0.1.0.tar.gz", hash = "sha256:e8b524cf1d0437501fdaf66b4e9da8b408a93bc34d80cf3a619c512368b6f440", size = 99155, upload-time = "2025-07-31T04:16:49.539Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a5/4d/f38a4e92528998b60e2b276756ca7593487f4acfb9e3db2c5cbb80966de8/openevolve-0.2.15.tar.gz", hash = "sha256:8de38b4ccaa014a5c3ecc61375af991c8ad77d5f0eaf15c719b78b594d2348b1", size = 150299, upload-time = "2025-09-16T22:52:12.987Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/91/e7/2631b8f9a71599b16fe998229cb7a7dc6da720a171d60be9b5c7cfd6db06/openevolve-0.1.0-py3-none-any.whl", hash = "sha256:3fc6cf32fe5319dbd7cda166df320eb5827d21d16f4eed95105b79c61a3964fa", size = 75570, upload-time = "2025-07-31T04:16:48.37Z" },
+    { url = "https://files.pythonhosted.org/packages/1b/94/42148523f93210b969b2f71afadb3b30354d2fd8c5e1f46addff179bd450/openevolve-0.2.15-py3-none-any.whl", hash = "sha256:b874881f69c0c248ed1c6c6fcd68e65c6de03c1c0e02c94f3734ea46461a96a8", size = 100737, upload-time = "2025-09-16T22:52:11.241Z" },
 ]
 
 [[package]]

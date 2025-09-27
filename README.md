@@ -1,74 +1,26 @@
-# EvoSLD 🧬 — Evolutionary Scaling Law Discovery
+# SLDAgent: Can Language Models Discover Scaling Laws? 🧬
 
-**EvoSLD** uses evolutionary computation to **discover and optimize scaling laws** 📈 across machine-learning scenarios. It sits on top of the [OpenEvolve](https://github.com/codelion/openevolve) framework and co-evolves both the **functional form** of scaling laws **and** their **fitting algorithms** 🤖.
+**SLDAgent** is an evolution-based AI agent that **autonomously discovers scaling laws** for large language models. This work introduces **SLDBench**, a comprehensive benchmark for this new scientific discovery task, and demonstrates that `SLDAgent` can uncover laws that are more accurate and conceptually sound than their human-derived counterparts.
 
-> 📄 **Paper**: [EvoSLD: Automated Neural Scaling Law Discovery With Large Language Models](https://arxiv.org/abs/2507.21184)
-
------
-
-## 📖 Table of Contents
-
-  * [Why EvoSLD?](https://www.google.com/search?q=%23%F0%9F%A4%94-why-evosld)
-  * [Features](https://www.google.com/search?q=%23%E2%9C%A8-features)
-  * [What’s included (tasks)](https://www.google.com/search?q=%23%F0%9F%93%A6-whats-included-tasks)
-  * [Requirements](https://www.google.com/search?q=%23%F0%9F%93%8B-requirements)
-  * [Install](https://www.google.com/search?q=%23%F0%9F%9B%A0%EF%B8%8F-install)
-      * [Using `uv` (recommended)](https://www.google.com/search?q=%23using-uv-recommended)
-      * [Using plain `pip`](https://www.google.com/search?q=%23using-plain-pip)
-  * [Quick Start](https://www.google.com/search?q=%23%F0%9F%9A%80-quick-start)
-  * [Project Layout](https://www.google.com/search?q=%23%F0%9F%93%82-project-layout)
-  * [Running Tasks](https://www.google.com/search?q=%23-running-tasks)
-  * [Evaluating a Discovered Program](https://www.google.com/search?q=%23%F0%9F%93%8A-evaluating-a-discovered-program)
-  * [Add a New Scaling Law](https://www.google.com/search?q=%23%E2%9E%95-add-a-new-scaling-law)
-  * [Configuration Guide](https://www.google.com/search?q=%23%E2%9A%99%EF%B8%8F-configuration-guide)
-  * [Data Interface](https://www.google.com/search?q=%23-data-interface)
-  * [Tips for Search/Evolution](https://www.google.com/search?q=%23%F0%9F%92%A1-tips-for-searchevolution)
-  * [Troubleshooting](https://www.google.com/search?q=%23%F0%9F%86%98-troubleshooting)
-  * [FAQ](https://www.google.com/search?q=%23%E2%9D%93-faq)
-  * [Cite](https://www.google.com/search?q=%23%E2%9C%8D%EF%B8%8F-cite)
-  * [Acknowledgments](https://www.google.com/search?q=%23%F0%9F%99%8F-acknowledgments)
+The agent co-optimizes both the **symbolic formula** of a scaling law and the **parameter-fitting algorithm**, enabling it to explore complex relationships and achieve superhuman performance in predicting model behavior at scale.
 
 -----
 
-## 🤔 Why EvoSLD?
+## 📦 The SLDBench Benchmark
 
-Scaling laws relate performance to factors like model size, dataset size, compute, and architecture. Hand-deriving such laws is time-consuming and often brittle. **EvoSLD** automates this by:
+This project includes **SLDBench**, the first comprehensive benchmark for scaling law discovery, curated from over 5,000 LLM training experiments from existing literature.
 
-  * **Searching** 🧠 for symbolic forms of scaling laws (closed-form functions).
-  * **Co-designing** 🧑‍🎨 the corresponding **fitting/optimization routine**.
-  * **Selecting** ✅ candidates via evolutionary pressure on held-out data.
+| Task key | Config file |
+| :--- | :--- |
+| `parallel` | `configs/parallel_scaling_law.yaml` |
+| `vocab_size` | `configs/vocab_scaling_law.yaml` |
+| `sft` | `configs/sft_scaling_law.yaml` |
+| `domain_mix` | `configs/domain_mixture_scaling_law.yaml` |
+| `moe` | `configs/moe_scaling_law.yaml` |
+| `data_constrained_scaling_law` | `configs/data_constrained_scaling_law_scaling_law.yaml` |
+| `lr_and_bsz` | `configs/lr_bsz_scaling_law.yaml` |
 
-The result is a practical engine that can **rediscover** known laws and **propose better ones**—with explicit code you can inspect and re-use.
-
------
-
-## ✨ Features
-
-  * **End-to-end discovery**: Evolves closed-form scaling functions *and* their bespoke optimizers.
-  * **Multiple domains** out of the box:
-      * **Data-Constrained**: How training data affects loss.
-      * **Domain Mixture**: Effect of mixing domains on performance.
-      * **Learning Rate**: Scaling with learning rate & batch size.
-      * **Mixture of Experts (MoE)**: Behavior in MoE architectures.
-      * **Rectified (SFT)**: Laws for supervised fine-tuning.
-      * **Vocabulary**: Impact of vocabulary size.
-  * **Customizable**: All stages (prompting, evolution, evaluation, data) are configurable.
-  * **Checkpoints & reproducibility**: Periodic snapshots + seeds for reliable runs.
-
------
-
-## 📦 What’s included (tasks)
-
-| Task key | Config file | Data folder |
-| :--- | :--- | :--- |
-| `data_constrained_scaling_law` | `configs/data_constrained_scaling_law.yaml` | `data/data_constrained_scaling_law/` |
-| `domain_mixture_scaling_law` | `configs/domain_mixture_scaling_law.yaml` | `data/domain_mixture_scaling_law/` |
-| `lr_bsz_scaling_law` | `configs/lr_bsz_scaling_law.yaml` | `data/lr_bsz_scaling_law/` |
-| `moe_scaling_law` | `configs/moe_scaling_law.yaml` | `data/moe_scaling_law/` |
-| `sft_scaling_law` | `configs/sft_scaling_law.yaml` | `data/sft_scaling_law/` |
-| `vocab_scaling_law` | `configs/vocab_scaling_law.yaml` | `data/vocab_scaling_law/` |
-
-> Add your own tasks in the same pattern; see [Add a New Scaling Law](https://www.google.com/search?q=%23%E2%9E%95-add-a-new-scaling-law).
+> Data is centrally hosted on Hugging Face Hub at [pkuHaowei/sldbench](https://huggingface.co/datasets/pkuHaowei/sldbench).
 
 -----
 
@@ -90,7 +42,7 @@ The result is a practical engine that can **rediscover** known laws and **propos
 ```bash
 # 1) Clone the repo
 git clone <repository-url>
-cd evosld
+cd SLD
 
 # 2) Install dependencies
 uv sync
@@ -152,21 +104,21 @@ bash scripts/run.sh
 ## 📂 Project Layout
 
 ```
-evosld/
-├─ configs/               # ⚙️ YAML configs (one per scaling law)
-│  ├─ data_constrained_scaling_law.yaml
-│  └─ ...
-├─ data/                  # 📊 Data files & loaders
-│  ├─ {task_name}/        # 📁 One folder per task
-│  │  ├─ data.csv
-│  │  └─ {task_name}_loader.py
-│  └─ ...
-├─ data_loader.py         # ↔️ Unified data loading interface
-├─ evaluator.py           # ✅ Unified evaluation system
-├─ init_program.py        # 🌱 Initial scaling-law template
-├─ results/               # 🏆 Outputs & checkpoints
+SLD/
+├─ configs/                  # ⚙️ YAML configs (one per scaling law)
+│  ├─ data_constrained_scaling_law_scaling_law.yaml
+│  ├─ domain_mix_scaling_law.yaml
+│  ├─ lr_and_bsz_scaling_law.yaml
+│  ├─ moe_scaling_law.yaml
+│  ├─ parallel_scaling_law.yaml
+│  ├─ sft_scaling_law.yaml
+│  └─ vocab_size_scaling_law.yaml
+├─ data_loader.py            # ↔️ Unified data loading interface (from Hugging Face)
+├─ evaluator.py              # ✅ Unified evaluation system
+├─ init_program.py           # 🌱 Initial scaling-law template
+├─ results/                  # 🏆 Outputs & checkpoints (created automatically)
 └─ scripts/
-   └─ run.sh              # 🏃 Batch execution helper
+   └─ run.sh                  # 🏃 Batch execution helper
 ```
 
 -----
@@ -210,39 +162,40 @@ uv run python evaluator.py \
 
 ## ➕ Add a New Scaling Law
 
-### 1\) Create a Config
+### 1) Create a Config
 
 Create `configs/your_law_name.yaml` and customize the settings (see the full template in the original README). Key sections include `llm`, `prompt`, `database`, and `evaluator`.
 
-### 2\) Prepare Data
+### 2) Prepare and Host Data
 
-Create a directory for your data and add a `data.csv` file:
+Upload your data to Hugging Face Hub. The data should be structured with appropriate feature and target columns following the existing schema patterns.
 
-```bash
-mkdir -p data/your_law_name
-```
+### 3) Register the Task Schema
 
-Your `data.csv` should have columns for features and the target variable.
-
-### 3\) Create a Data Loader
-
-Add a Python script `data/your_law_name_loader.py` to load your data. It must contain a `load_data_for_task` function that returns a dictionary containing NumPy arrays for features (X) and labels (y).
-
-### 4\) Register the Task
-
-Add your task to the `TASK_CONFIG` dictionary in `evaluator.py`:
+Add your task schema to the `TASK_SCHEMA_MAP` dictionary in `data_loader.py`:
 
 ```python
-TASK_CONFIG = {
+TASK_SCHEMA_MAP = {
     # ... existing tasks ...
     "your_law_name": {
-        "scaling_vars": ["your_feature1", "your_feature2"],
-        "response_var": "your_target",
+        "feature_names": ["feature1", "feature2"],
+        "target_name": "target_variable",
     },
 }
 ```
 
-### 5\) (Optional) Add to Batch Script
+### 4) Register the Task
+
+Add your task to the `SUPPORTED_TASKS` set in `evaluator.py`:
+
+```python
+SUPPORTED_TASKS = {
+    # ... existing tasks ...
+    "your_law_name",
+}
+```
+
+### 5) (Optional) Add to Batch Script
 
 Add `"your_law_name"` to the `tasks` array in `scripts/run.sh` to include it in batch runs.
 
@@ -262,24 +215,15 @@ Key knobs to tune in your `.yaml` files:
 
 ## ↔️ Data Interface
 
-  * Your data loader should return a dictionary where values are tuples of `(features, target)`.
-  * Features should be a 2D `(N, F)` NumPy array, and the target should be a 1D NumPy array.
-  * The unified `data_loader.py` will use your task-specific loader based on the `EVAL_TASK_NAME`.
+  * Data is centrally hosted on Hugging Face Hub at [pkuHaowei/sldbench](https://huggingface.co/datasets/pkuHaowei/sldbench)
+  * The unified `data_loader.py` automatically loads data based on the task name and predefined schema
 
------
-
-## 💡 Tips for Search/Evolution
-
-  * Start with a modest budget and inspect intermediate checkpoints in `results/`.
-  * If evolution stalls, try increasing `population_size` or the `exploration_ratio`.
-  * Consider grouping data into different regimes (e.g., compute-limited vs. data-limited) and evaluating on each subset for more nuanced insights.
-
------
 
 ## 🆘 Troubleshooting
 
   * **Import Errors**: Run `uv sync` to ensure your environment is up-to-date.
-  * **Task Not Found**: Check that `EVAL_TASK_NAME` matches a key in `TASK_CONFIG` in `evaluator.py`.
+  * **Task Not Found**: Check that `EVAL_TASK_NAME` matches a task key in `SUPPORTED_TASKS` in `evaluator.py`.
+  * **Data Loading Issues**: Verify internet connection and access to Hugging Face Hub repository `pkuHaowei/sldbench`.
   * **API Timeouts**: Increase `llm.timeout` and `llm.retries` in your config, or check your `OPENAI_BASE_URL`.
   * **Script Not Executable**: Run `chmod +x scripts/run.sh` or execute it with `bash scripts/run.sh`.
 
@@ -300,13 +244,12 @@ Under `results/{task_name}/{run_id}/`. You'll find checkpoints, logs, and the fi
 
 ## ✍️ Cite
 
-If you use EvoSLD in your academic work, please cite the paper:
+If you use SLDAgent or SLDBench in your academic work, please cite the paper:
 
 ```bibtex
-@article{lin2025evosld,
-  title   = {EvoSLD: Automated Neural Scaling Law Discovery With Large Language Models},
-  author  = {Lin, Haowei et al},
-  journal = {arXiv preprint arXiv:2507.21184},
+@article{lin2026SLD,
+  title   = {Can Language Models Discover Scaling Laws?},
+  author  = {Lin, Haowei et al.},
   year    = {2025}
 }
 ```
@@ -315,4 +258,4 @@ If you use EvoSLD in your academic work, please cite the paper:
 
 ## 🙏 Acknowledgments
 
-This project is built on the excellent **[OpenEvolve](https://github.com/codelion/openevolve)** evolutionary coding framework.
+This project is built on the excellent **[OpenEvolve](https://github.com/codelion/openevolve)**.

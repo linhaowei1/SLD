@@ -25,10 +25,10 @@ prompt:
 
     Focus on mathematical accuracy across different vocabulary configurations, cross-dataset generalization, parameter efficiency (simple forms that can be fitted with limited data), and numerical/theoretical stability.
 
-    **DATA CHARACTERISTICS (1200 total data points):**
+    **DATA CHARACTERISTICS**
     - Features: [non_vocab_parameters, vocab_size, num_characters] - 3D input
     - Labels: unigram_normalized_loss - scalar output
-    - Dataset size: 1080 training, 120 test samples (90%/10% split)
+    - Dataset size: 1080 
     - Vocabulary size: 4096 to 96256 tokens (8 distinct sizes)
     - Embedding dimension: 512 to 2048 dimensions (4 values)
     - Character count: 1e8 to 5e12 characters (100M to 5T characters)

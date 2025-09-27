@@ -25,10 +25,10 @@ prompt:
 
     Focus on mathematical accuracy across different MoE configurations, generalization across expert counts and model sizes, parameter efficiency (simple forms that can be fitted with limited data), and numerical/theoretical stability.
 
-    **DATA CHARACTERISTICS (221 total data points):**
+    **DATA CHARACTERISTICS**
     - Features: [num_experts, dense_parameter_count] - 2D input
     - Labels: loss_validation - scalar output
-    - Dataset size: 193 training, 28 test samples (87%/13% split)
+    - Dataset size: 193 
     - Number of experts: 1 to 64 experts (various configurations)
     - Dense parameter count: 1e8 to 8e8 parameters (100M to 800M parameters)
     - Validation loss range: 1.8 to 3.8 cross-entropy loss

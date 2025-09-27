@@ -25,10 +25,10 @@ prompt:
 
     Focus on mathematical accuracy across different model sizes, cross-domain generalization, parameter efficiency (simple forms that can be fitted with limited data), and numerical/theoretical stability.
 
-    **DATA CHARACTERISTICS (104 total data points across 4 model sizes):**
+    **DATA CHARACTERISTICS**
     - Features: Domain proportions (5 domains) - array of shape (n_mixtures, 5)
     - Labels: Multi-domain losses (5 domains) - array of shape (n_mixtures, 5)
-    - Dataset size: 80 training (20 per model size), 24 test (6 per model size) samples
+    - Dataset size: 80 training (20 per model size)
     - Model parameter sizes: 70M, 160M, 410M, 1B parameters (4 separate groups)
     - Domain proportions: Each row sums to 1.0 (mixture weights)
     - Loss ranges: Domain losses span 1.8-4.2 cross-entropy loss

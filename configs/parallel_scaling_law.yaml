@@ -25,7 +25,7 @@ prompt:
 
     Focus on mathematical accuracy across different parallel configurations, cross-dataset generalization, parameter efficiency (simple forms that can be fitted with limited data), and numerical/theoretical stability.
 
-    **DATA CHARACTERISTICS (36 total data points across 2 groups):**
+    **DATA CHARACTERISTICS**
     - Features: [num_params, parallel_size] - 2D input
     - Labels: loss - scalar output
     - Groups: 'pile' and 'stack' datasets (18 samples each)

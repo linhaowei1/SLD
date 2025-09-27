@@ -25,17 +25,16 @@ prompt:
 
     Focus on mathematical accuracy across different model architectures, cross-dataset generalization, parameter efficiency (simple forms that can be fitted with limited data), and numerical/theoretical stability.
 
-    **DATA CHARACTERISTICS (546 total data points across 42 model-dataset pairs):**
+    **DATA CHARACTERISTICS:**
     - Features: [sft_data_size] - 1D input
     - Labels: sft_loss - scalar output
-    - Dataset size: 504 training (12 per group), 42 test (1 per group) samples
+    - Dataset size: 504 (12 per group)
     - Data size range: 200 to 819,200 examples (14 exponentially-spaced sizes)
     - Model parameter range: 1.24e8 to 1.3e9 parameters (124M to 1.3B parameters)
     - Loss range: 1.7 to 4.9 cross-entropy loss
     - Datasets: Flan, Gigaword, and Wikiword instruction-tuning datasets
     - Model architectures: Various transformer-based language models
     - 42 distinct (model, dataset) configuration groups for cross-generalization
-    - Test set contains largest data size for each group (extrapolation test)
 
     The function signatures must remain:
 
