@@ -12,13 +12,13 @@ This project includes **SLDBench**, the first comprehensive benchmark for scalin
 
 | Task key | Config file |
 | :--- | :--- |
-| `parallel` | `configs/parallel_scaling_law.yaml` |
-| `vocab_size` | `configs/vocab_scaling_law.yaml` |
-| `sft` | `configs/sft_scaling_law.yaml` |
-| `domain_mix` | `configs/domain_mixture_scaling_law.yaml` |
-| `moe` | `configs/moe_scaling_law.yaml` |
-| `data_constrained_scaling_law` | `configs/data_constrained_scaling_law_scaling_law.yaml` |
-| `lr_and_bsz` | `configs/lr_bsz_scaling_law.yaml` |
+| `parallel_scaling_law` | `configs/parallel_scaling_law.yaml` |
+| `vocab_scaling_law` | `configs/vocab_scaling_law.yaml` |
+| `sft_scaling_law` | `configs/sft_scaling_law.yaml` |
+| `domain_mixture_scaling_law` | `configs/domain_mixture_scaling_law.yaml` |
+| `moe_scaling_law` | `configs/moe_scaling_law.yaml` |
+| `data_constrained_scaling_law` | `configs/data_constrained_scaling_law.yaml` |
+| `lr_bsz_scaling_law` | `configs/lr_bsz_scaling_law.yaml` |
 
 > Data is centrally hosted on Hugging Face Hub at [pkuHaowei/sldbench](https://huggingface.co/datasets/pkuHaowei/sldbench).
 
