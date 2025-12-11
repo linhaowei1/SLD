@@ -5,10 +5,13 @@ set -e
 
 ## --- Configuration ---
 
-# Set the maximum number of parallel jobs PER MODEL.
-# Usage: ./run_benchmark.sh 8
-# If no argument is given, it defaults to 4.
-PARALLELISM_DEGREE=${1:-4}
+# Usage: ./run_benchmark.sh [jobs_per_model]
+# Default is 4 to be safe.
+JOBS_PER_MODEL=${1:-4}
+
+# OPTIONAL: Safety cap for the TOTAL number of jobs across all models on the machine.
+# Set to empty string "" to disable global limiting (unlimited total jobs).
+GLOBAL_MAX_JOBS=64
 
 # Array of task configurations to run
 tasks=(
@@ -19,39 +22,55 @@ tasks=(
     "domain_mixture_scaling_law"
     "lr_bsz_scaling_law"
     "parallel_scaling_law"
+    "easy_question_scaling_law"
 )
 
 # Array of models to test
 models=(
-    "claude-sonnet-4-20250514"
+    "gpt-5"
+    "claude-sonnet-4-5-20250929"
+    "claude-haiku-4-5-20251001"
+    "gemini-2.5-flash"
+    "gemini-3-pro-preview"
+    "o4-mini"
 )
 
-# Base directory for results
-RESULTS_BASE_DIR="./results"
+RESULTS_BASE_DIR="./results-full"
 
 ## --- Graceful Shutdown ---
 
-# This function is called when the script receives a signal to terminate (e.g., Ctrl+C).
+# Kill the entire process group (script + all subshells + all python jobs)
 cleanup() {
-    echo -e "\n🚨 Caught Ctrl+C. Terminating all background jobs..."
-    # Get the process IDs of all background jobs started by this script.
-    pids_to_kill=$(jobs -p)
-    if [ -n "$pids_to_kill" ]; then
-        # Terminate all the jobs. The '2>/dev/null' suppresses errors
-        # if a job has already finished.
-        kill $pids_to_kill 2>/dev/null
-    fi
-    echo "All background jobs terminated. Exiting now."
+    echo -e "\n🚨 Caught Signal. Killing all descendant processes..."
+    # 'kill 0' sends the signal to every process in the current process group.
+    # We suppress the self-kill error message.
+    kill 0 2>/dev/null
     exit 1
 }
 
-# Set the trap. The 'cleanup' function will be called when the script
-# receives an INT (interrupt, from Ctrl+C) or TERM signal.
-trap cleanup INT TERM
+# Trap INT (Ctrl+C) and TERM
+trap cleanup INT TERM EXIT
+
+## --- Helper Function ---
+
+# Check global concurrency across the entire machine (for the current user)
+wait_for_global_slots() {
+    if [ -z "$GLOBAL_MAX_JOBS" ]; then return; fi
+    
+    # Count python/openevolve jobs belonging to this user
+    # Note: This is a rough heuristic to prevent machine melting
+    while true; do
+        current_jobs=$(pgrep -c -u "$(whoami)" -f "python|openevolve")
+        if [ "$current_jobs" -lt "$GLOBAL_MAX_JOBS" ]; then
+            break
+        fi
+        # Sleep randomly to prevent race conditions between subshells
+        sleep $(( ( RANDOM % 5 )  + 1 ))
+    done
+}
 
 ## --- Core Logic ---
 
-# This function encapsulates a single unit of work: one evolution and its evaluation.
 run_single_job() {
     local task_name=$1
     local model=$2
@@ -61,90 +80,65 @@ run_single_job() {
     local best_program_path="${output_dir}/best/best_program.py"
     local best_eval_log_path="${output_dir}/best_eval.log"
 
-    # --- Skip Condition ---
-    # A job is complete only if its log file exists AND is not empty.
-    # The '-s' check handles both missing and empty files.
+    # Enforce global limit if set
+    wait_for_global_slots
+
     if [ -s "$best_eval_log_path" ]; then
-        echo "--- Skipping: [Task: $task_name] [Model: $model] [Run: $run] (valid result exists) ---"
         return
     fi
 
-    echo "--- Processing: [Task: $task_name] [Model: $model] [Run: $run] ---"
-
-    # Ensure the output directory exists for subsequent steps.
+    # Create a unique log file for this specific job execution to avoid console clutter
+    local job_log="${output_dir}/execution.log"
     mkdir -p "$output_dir"
 
-    # --- Evolution Step ---
-    # Run the full evolution process only if the best program does not exist.
+    # echo "Starting ${task_name}/${model}/${run}" >> "$job_log"
+
     if [ ! -f "$best_program_path" ]; then
-        echo "   -> No best program found. Evolving for ${task_name}/${model}/${run_id}..."
         EVAL_TASK_NAME="$task_name" uv run openevolve-run \
             --config "configs/${task_name}.yaml" \
             init_program.py evaluator.py \
             --primary-model "$model" \
-            --secondary-model "$model" \
-            --output "$output_dir"
-    else
-        echo "   -> Best program already exists. Skipping evolution."
+            --output "$output_dir" \
+            >> "$job_log" 2>&1
     fi
 
-    # --- Evaluation Step ---
-    # After a potential evolution, check for the program again. If it exists,
-    # run (or re-run) the evaluation.
     if [ -f "$best_program_path" ]; then
-        echo "   -> Evaluating best program for ${task_name}/${model}/${run_id}..."
         EVAL_TASK_NAME="$task_name" uv run python evaluator.py \
             "$best_program_path" \
-            > "$best_eval_log_path"
-    else
-        # This case occurs if the evolution step was required but failed to produce a program.
-        echo "   -> WARNING: Evolution failed. No best program found for ${task_name}/${model}/${run_id}. Evaluation skipped."
+            > "$best_eval_log_path" 2>&1
     fi
-
-    echo "--- Finished: [Task: $task_name] [Model: $model] [Run: $run] ---"
 }
 
 ## --- Job Orchestration ---
 
-echo "Starting benchmark with a parallelism degree of $PARALLELISM_DEGREE PER MODEL."
-# Calculate and display the total number of jobs that will be executed
-total_runs_per_config=3
-total_jobs=$((${#tasks[@]} * ${#models[@]} * total_runs_per_config))
-echo "Total jobs to run: $total_jobs"
+echo "Starting benchmark."
+echo "Config: $JOBS_PER_MODEL jobs per model."
+[ -n "$GLOBAL_MAX_JOBS" ] && echo "Global Cap: Max $GLOBAL_MAX_JOBS concurrent python processes on machine."
 
-# Loop through each model and start a dedicated, parallelized process for it.
+total_runs_per_config=5
+
 for model in "${models[@]}"; do
-    # Run the task processing for each model in a separate subshell `(...)`
-    # and launch that subshell in the background `&`.
-    # This ensures each model has its own independent job pool.
     (
-        echo "--- Launching tasks for model [$model] with inner parallelism of [$PARALLELISM_DEGREE] ---"
-
-        # Loop through all tasks and runs for the current model
+        echo "--- 🚀 Launching pool for [$model] ---"
         for task in "${tasks[@]}"; do
             for run in $(seq 1 $total_runs_per_config); do
-                # Check the number of jobs running *within this subshell*.
-                # This enforces the per-model parallelism limit.
-                while [[ $(jobs -p | wc -l) -ge $PARALLELISM_DEGREE ]]; do
-                    # Wait for any job *within this subshell* to complete.
+                
+                # Per-Model Limit Check
+                # 'jobs -r' counts only running jobs in this subshell
+                while [[ $(jobs -r -p | wc -l) -ge $JOBS_PER_MODEL ]]; do
+                    # Wait for *any* job in this subshell to finish
                     wait -n
                 done
 
-                # Launch the actual job in the background.
+                # Run in background
                 run_single_job "$task" "$model" "$run" &
             done
         done
-        
-        # After launching all jobs for this model, wait for them to finish
-        # before the subshell exits.
         wait
-        echo "--- ✅ All tasks for model [$model] are complete. ---"
+        echo "--- ✅ Model [$model] finished all tasks ---"
     ) &
 done
 
-# Final wait at the main script level to ensure all backgrounded model-processing
-# subshells have completed.
-echo "All model task groups launched. Waiting for all models to complete..."
+# Main script waits for all model subshells
 wait
-
 echo "✅ All tasks completed!"

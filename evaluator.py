@@ -26,7 +26,8 @@ SUPPORTED_TASKS = {
     "vocab_scaling_law",
     "domain_mixture_scaling_law",
     "lr_bsz_scaling_law",
-    "parallel_scaling_law"
+    "parallel_scaling_law",
+    "easy_question_scaling_law"
 }
 
 # --- Core Functions ---

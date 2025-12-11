@@ -6,10 +6,6 @@ random_seed: 42
 
 # LLM configuration
 llm:
-  primary_model: null
-  primary_model_weight: 1.0
-  secondary_model: null
-  secondary_model_weight: 0.0
   api_base: "http://api.llm.wq/v1"
   max_tokens: 16384
   timeout: 240

@@ -42,6 +42,10 @@ TASK_SCHEMA_MAP = {
     "parallel_scaling_law": {
         "feature_names": ["num_params", "parallel_size"],
         "target_name": "loss"
+    },
+    "easy_question_scaling_law": {
+        "feature_names": ["log_flops"],
+        "target_name": "brier_score",
     }
 }
 
