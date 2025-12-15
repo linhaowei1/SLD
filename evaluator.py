@@ -180,7 +180,7 @@ def evaluate_core(
         fit_scaling_law = program.fit_scaling_law
         scaling_law_func = program.scaling_law_func
 
-        if not use_test_data:
+        if not fitted_params_map:
             # --- FIT on training data ---
             train_data = load_data(task_name, train=True)
             if not train_data:
@@ -197,7 +197,7 @@ def evaluate_core(
             if fitted_params_map is None:
                 return get_failure_result("fitted_params_map is required for evaluation.")
 
-            test_data = load_data(task_name, train=False)
+            test_data = load_data(task_name, train=use_test_data)
             if not test_data:
                 return get_failure_result("No test data found.")
 
@@ -227,7 +227,7 @@ def evaluate_core(
         traceback.print_exc(file=sys.stderr)
         return get_failure_result(str(e))
 
-def evaluate(program_path: str, verbose: bool = False) -> Dict[str, Any]:
+def evaluate(program_path: str, verbose: bool = False, use_test_data: bool = False) -> Dict[str, Any]:
     """
     High-level, single-call evaluation function.
 
@@ -261,7 +261,7 @@ def evaluate(program_path: str, verbose: bool = False) -> Dict[str, Any]:
     test_result = evaluate_core(
         program_path,
         task_name,
-        use_test_data=True,
+        use_test_data=use_test_data,
         fitted_params_map=fitted_params_map,
     )
 
@@ -283,7 +283,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     print(f"--- Running Evaluation for Program: {args.program_path} ---")
-    final_results = evaluate(args.program_path, verbose=True)
+    final_results = evaluate(args.program_path, verbose=True, use_test_data=True)
 
     task_name = final_results.get('task_name', 'N/A')
     print(f"Inferred Task: {task_name}")
