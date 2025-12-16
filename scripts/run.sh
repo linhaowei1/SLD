@@ -35,7 +35,7 @@ models=(
     "o4-mini"
 )
 
-RESULTS_BASE_DIR="./results-full"
+RESULTS_BASE_DIR="./results"
 
 ## --- Graceful Shutdown ---
 
