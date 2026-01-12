@@ -197,7 +197,7 @@ def evaluate_core(
             if fitted_params_map is None:
                 return get_failure_result("fitted_params_map is required for evaluation.")
 
-            test_data = load_data(task_name, train=use_test_data)
+            test_data = load_data(task_name, train=not use_test_data)
             if not test_data:
                 return get_failure_result("No test data found.")
 
