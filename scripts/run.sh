@@ -5,7 +5,7 @@ set -e
 
 ## --- Configuration ---
 
-# Usage: ./run.sh [jobs_per_model]
+# Usage: ./run_benchmark.sh [jobs_per_model]
 # Default is 4 to be safe.
 JOBS_PER_MODEL=${1:-4}
 
@@ -27,7 +27,7 @@ tasks=(
 
 # Array of models to test
 models=(
-    # "gpt-5"
+    "gpt-5"
     "claude-sonnet-4-5-20250929"
     "claude-haiku-4-5-20251001"
     "gemini-2.5-flash"
@@ -35,7 +35,7 @@ models=(
     "o4-mini"
 )
 
-RESULTS_BASE_DIR="./results/sldagent_260114"
+RESULTS_BASE_DIR="./results"
 
 ## --- Graceful Shutdown ---
 
