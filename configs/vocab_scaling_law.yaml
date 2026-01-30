@@ -6,7 +6,7 @@ random_seed: 42
 
 # LLM configuration
 llm:
-  api_base: "http://api.llm.wq/v1"
+  api_base: "YOUR_API_BASE_URL"
   max_tokens: 16384
   timeout: 240
   retries: 10
