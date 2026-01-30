@@ -9,6 +9,13 @@
 
 **Official repository for the paper:** *"Can Language Models Discover Scaling Laws?"*
 
+## 📰 News
+
+- **[2026.01.26]** 🎉 Our paper has been accepted at **ICLR 2026**!
+- **[2026.01.20]** 📝 Check out our **[main blog post](https://linhaowei1.github.io/scaling_law_discovery/blog/)** for an accessible overview of our work!
+
+---
+
 **SLDAgent** is an evolution-based AI agent that autonomously discovers scaling laws for large language models. This work introduces **SLDBench**, the first comprehensive benchmark for scaling law discovery, and demonstrates that AI agents can uncover laws that are more accurate and conceptually sound than their human-derived counterparts.
 
 The agent co-optimizes both the **symbolic formula** of a scaling law and the **parameter-fitting algorithm**, enabling it to explore complex relationships and achieve superhuman performance in predicting model behavior at scale.
@@ -23,7 +30,6 @@ The agent co-optimizes both the **symbolic formula** of a scaling law and the **
 | 📊 **Dataset** | [SLDBench on Hugging Face](https://huggingface.co/datasets/pkuHaowei/sldbench) |
 | 🏆 **Leaderboard** | [linhaowei1.github.io/scaling_law_discovery](https://linhaowei1.github.io/scaling_law_discovery) |
 | 🚢 **Harbor Adapter** | [harbor-datasets/sldbench](https://github.com/laude-institute/harbor-datasets/tree/main/datasets/sldbench) |
-| 📝 **Blog (OpenEvolve Collaboration)** | [SLDAgent + OpenEvolve](https://algorithmicsuperintelligence.ai/blog/openevolve-sldagent/index.html) |
 | 🔧 **OpenEvolve Framework** | [github.com/codelion/openevolve](https://github.com/codelion/openevolve) |
 
 ---
